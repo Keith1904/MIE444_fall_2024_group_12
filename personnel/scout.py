@@ -2,7 +2,7 @@ import numpy as np
 import random
 
 class Scout:
-    '''This class performs the localization algorithm and instructs the Operator where to go.'''
+    '''This class performs the localization algorithm and instructs the motorSergeant where to go.'''
     
     def __init__(self, num_particles, maze):
         # Define MCL Parameters
