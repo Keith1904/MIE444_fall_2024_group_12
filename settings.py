@@ -14,5 +14,5 @@ maze_dim_y = len(walls)*wall_segment_length
 num_particles = 20
 
 # Robot Characteristics
-self.wheel_distance = 3 # Distance between wheels (inches)
-self.wheel_circumference
+wheel_distance = 3              # Distance between wheels (inches)
+wheel_circumference = 2.55906   # Circumference of wheels (inches)

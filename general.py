@@ -1,6 +1,6 @@
 from personnel.motorSergeant import MotorSergeant
 from personnel.scout import Scout
-from personnel.sentry import Sentry
+from personnel.pathfinder import Pathfinder
 from personnel.recon import Recon
 from personnel.radioOperator import RadioOperator
 import settings as SETTINGS
