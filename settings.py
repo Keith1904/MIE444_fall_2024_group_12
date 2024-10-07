@@ -16,3 +16,6 @@ num_particles = 20
 # Robot Characteristics
 wheel_distance = 3              # Distance between wheels (inches)
 wheel_circumference = 2.55906   # Circumference of wheels (inches)
+
+# Sensor Settings
+

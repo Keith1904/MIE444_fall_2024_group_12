@@ -35,7 +35,8 @@ class Scout:
             return self.maze.walls[y_cell][x_cell] == 1
         return False
     
-    def predict:
+    def predict(self):
+        
         
         
                 

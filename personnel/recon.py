@@ -1,21 +1,37 @@
 class Recon:
     '''This class collects data from sensors and relays it to scout and pathfinder.'''
-    def __init__():
+    def __init__(self, general):
+        self.general = general
+        self.radioOperator = self.general.radioOperator
+    
+    
+        
 
 
 class Sensor:
     '''Generic sensor class'''
-    def __init__(self, x, y, id):
+    def __init__(self, sensor_id, x, y):
         self.x = x
         self.y = y
-        self.id = id
+        self.sensor_id = sensor_id
+        self.reading = 0
+
+    def sense(self, radioOperator):
+        self.reading = radioOperator.transmit(self.sensor_id)
         
-        
-class UltrasonicSensor(Sensor):
-    '''Class for ultrasonic sensor.'''
-    def __init__(self, x, y, id, rotation):
-        super().__init__(x, y, id)
+class DistanceSensor(Sensor):
+    '''Class for ultrasonic and TOF sensors.'''
+    def __init__(self, sensor_id, x, y, rotation):
+        super().__init__(sensor_id, x, y)
         self.rotation = rotation
         
-    def sense():
+class MotorEncoder(Sensor):
+    '''Class for motor encoders'''
+    def __init__(self, x, y, sensor_id):
+        super().__init__(x, y, sensor_id)
+        self.previous_reading = 0
+    
+    def sense(self, radioOperator):
+        self.previous_reading = self.reading
+        self.reading = radioOperator.transmit(self.sensor_id)
         
