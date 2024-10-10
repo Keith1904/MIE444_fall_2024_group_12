@@ -27,8 +27,8 @@ class DistanceSensor(Sensor):
         
 class MotorEncoder(Sensor):
     '''Class for motor encoders'''
-    def __init__(self, x, y, sensor_id):
-        super().__init__(x, y, sensor_id)
+    def __init__(self, sensor_id, x, y):
+        super().__init__(sensor_id, x, y)
         self.previous_reading = 0
     
     def sense(self, radioOperator):
