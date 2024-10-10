@@ -1,10 +1,8 @@
-import settings
 class Recon:
     '''This class collects data from sensors and relays it to scout and pathfinder.'''
-    def __init__(self, general):
-        self.general = general
-        self.distance_sensors = settings.distance_sensors
-        self.motor_encoders = settings.motor_encoders
+    def __init__(self, distance_sensors, motor_encoders):
+        self.distance_sensors = distance_sensors
+        self.motor_encoders = motor_encoders
         
     def check_sensors(self, sensor_ids, radioOperator):
         readings = radioOperator.transmit(sensor_ids)

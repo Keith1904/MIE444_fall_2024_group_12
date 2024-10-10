@@ -40,3 +40,16 @@ PORT_RX = 61201         # The port used by the *CLIENT* to send data
 BAUDRATE = 9600         # Baudrate in bps
 PORT_SERIAL = 'COM3'    # COM port identification
 TIMEOUT_SERIAL = 1      # Serial port timeout, in seconds
+
+### Packet Framing values ###
+FRAMESTART = '['
+FRAMEEND = ']'
+CMD_DELIMITER = ','
+
+### Set whether to use TCP (SimMeR) or serial (Arduino) ###
+SIMULATE = True
+
+if SIMULATE:
+    TRANSMIT_PAUSE = 0.1
+else:
+    TRANSMIT_PAUSE = 0
