@@ -1,4 +1,4 @@
-from personnel.motorSergeant import MotorSergeant
+from personnel.motor_sergeant import MotorSergeant
 from personnel.scout import Scout
 from personnel.pathfinder import Pathfinder
 from personnel.recon import Recon
