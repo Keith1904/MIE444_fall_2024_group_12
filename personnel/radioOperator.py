@@ -94,7 +94,7 @@ class RadioOperator:
 
         start_time = time.time()
         response_raw = ''
-        while time.time() < start_time + TIMEOUT_SERIAL:
+        while time.time() < start_time + self.TIMEOUT_SERIAL:
             if self.SER.in_waiting:
                 response_char = self.SER.read().decode('ascii')
                 if response_char == self.FRAMEEND:
@@ -113,7 +113,7 @@ class RadioOperator:
 
     def clear_serial(self, delay_time: float = 0):
         '''Wait some time (delay_time) and then clear the serial buffer.'''
-        if SER.in_waiting:
+        if self.SER.in_waiting:
             time.sleep(delay_time)
             print(f'Clearing Serial... Dumped: {self.SER.read(self.SER.in_waiting)}')
 
