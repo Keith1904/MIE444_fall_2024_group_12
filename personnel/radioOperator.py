@@ -49,16 +49,16 @@ class RadioOperator:
     def receive(self):
         '''Selects whether to use serial or tcp for receiving.'''
         if self.SIMULATE:
-            return receive_tcp()
+            return self.receive_tcp()
         else:
-            return receive_serial()
+            return self.receive_serial()
 
     # TCP communication functions
     def transmit_tcp(self, data):
         '''Send a command over the TCP connection.'''
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
-                s.connect((self..HOST, self.PORT_TX))
+                s.connect((self.HOST, self.PORT_TX))
                 s.send(data.encode('ascii'))
             except (ConnectionRefusedError, ConnectionResetError):
                 print('Tx Connection was refused or reset.')
@@ -87,7 +87,7 @@ class RadioOperator:
     def transmit_serial(self, data):
         '''Transmit a command over a serial connection.'''
         self.clear_serial()
-        SER.write(data.encode('ascii'))
+        self.SER.write(data.encode('ascii'))
 
     def receive_serial(self):
         '''Receive a reply over a serial connection.'''
@@ -95,9 +95,9 @@ class RadioOperator:
         start_time = time.time()
         response_raw = ''
         while time.time() < start_time + TIMEOUT_SERIAL:
-            if SER.in_waiting:
-                response_char = SER.read().decode('ascii')
-                if response_char == FRAMEEND:
+            if self.SER.in_waiting:
+                response_char = self.SER.read().decode('ascii')
+                if response_char == self.FRAMEEND:
                     response_raw += response_char
                     break
                 else:
@@ -107,7 +107,7 @@ class RadioOperator:
 
         # If response received, return it
         if response_raw:
-            return [depacketize(response_raw), datetime.now().strftime("%H:%M:%S")]
+            return [self.depacketize(response_raw), datetime.now().strftime("%H:%M:%S")]
         else:
             return [[False], datetime.now().strftime("%H:%M:%S")]
 
@@ -115,7 +115,7 @@ class RadioOperator:
         '''Wait some time (delay_time) and then clear the serial buffer.'''
         if SER.in_waiting:
             time.sleep(delay_time)
-            print(f'Clearing Serial... Dumped: {SER.read(SER.in_waiting)}')
+            print(f'Clearing Serial... Dumped: {self.SER.read(self.SER.in_waiting)}')
 
     # Packetization and validation functions
     def depacketize(self, data_raw: str):
@@ -124,12 +124,12 @@ class RadioOperator:
         '''
 
         # Locate start and end framing characters
-        start = data_raw.find(FRAMESTART)
-        end = data_raw.find(FRAMEEND)
+        start = data_raw.find(self.FRAMESTART)
+        end = data_raw.find(self.FRAMEEND)
 
         # Check that the start and end framing characters are present, then return commands as a list
         if (start >= 0 and end >= start):
-            data = data_raw[start+1:end].replace(f'{FRAMEEND}{FRAMESTART}', ',').split(',')
+            data = data_raw[start+1:end].replace(f'{self.FRAMEEND}{self.FRAMESTART}', ',').split(',')
             cmd_list = [item.split(':', 1) for item in data]
 
             # Make sure this list is formatted in the expected manner
@@ -155,11 +155,11 @@ class RadioOperator:
         '''
 
         # Check to make sure that a packet doesn't include any forbidden characters (0x01, 0x02, 0x03, 0x04)
-        forbidden = [FRAMESTART, FRAMEEND, '\n']
+        forbidden = [self.FRAMESTART, self.FRAMEEND, '\n']
         check_fail = any(char in data for char in forbidden)
 
         if not check_fail:
-            return FRAMESTART + data + FRAMEEND
+            return self.FRAMESTART + data + self.FRAMEEND
 
         return False
 
@@ -169,7 +169,7 @@ class RadioOperator:
         '''
         # Validate that the command ids of the responses match those that were sent
         cmd_list = [item.split(':')[0] for item in cmds.split(',')]
-        valid = validate_responses(cmd_list, responses_list)
+        valid = self.validate_responses(cmd_list, responses_list)
 
         # Build the response string
         out_string = ''
