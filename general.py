@@ -1,4 +1,4 @@
-from personnel.motor_sergeant import MotorSergeant
+from personnel.motorSergeant import MotorSergeant
 from personnel.scout import Scout
 from personnel.pathfinder import Pathfinder
 from personnel.recon import Recon
@@ -12,17 +12,30 @@ class General:
     def __init__(self):
         self.maze = Maze()
         self.robot = Robot()
-        self.radioOperator = RadioOperator(self)
-        self.motorSergeant = MotorSergeant(self, self.robot)
+        self.radioOperator = RadioOperator(
+            HOST=SETTINGS.HOST,
+            PORT_TX=SETTINGS.PORT_TX,
+            PORT_RX=SETTINGS.PORT_RX,
+            BAUDRATE=SETTINGS.BAUDRATE,
+            PORT_SERIAL=SETTINGS.PORT_SERIAL,
+            TIMEOUT_SERIAL=SETTINGS.TIMEOUT_SERIAL,
+            FRAMESTART=SETTINGS.FRAMESTART,
+            FRAMEEND=SETTINGS.FRAMEEND,
+            CMD_DELIMITER=SETTINGS.CMD_DELIMITER,
+            SIMULATE=SETTINGS.SIMULATE,
+            TRANSMIT_PAUSE=SETTINGS.TRANSMIT_PAUSE
+            )
+        self.pathfinder = MotorSergeant()
         self.scout = Scout(self, self.maze, self.robot)
-        self.sentry = Sentry(self, self.motorSergeant)
-        self.recon = Recon(self, self.robot, self.radioOperator)
+        self.motorSergeant = MotorSergeant(self, self.motorSergeant)
+        self.recon = Recon()
         
     def execute_mission(self):
-        data = self.recon.collect_data()
-        location = self.scout.find_path(data)
-        self.motorSergeant.move_to(location)
-        if self.sentry.check_for_obstacles():
+        self.recon.check_sensors(self.robot, ['u0', 'u1', 'u2', 'u3', 'm0', 'm1', 'i0'], self.radioOperator)
+        location = self.scout.localize(self.robot)
+        path = self.pathfinder.chart_path(location)
+        self.motorSergeant.move_along(path)
+        if self.motorSergeant.check_for_obstacles():
             self.motorSergeant.emergency_stop()  # Emergency stop if crash detected
             
 class Maze:
@@ -36,4 +49,13 @@ class Maze:
         self.maze_dim_y = SETTINGS.maze_dim_y
         
 class Robot:
-    
+    def __init__(self, distance_sensors, motor_encoders, ir_sensor):
+        self.distance_sensors = distance_sensors
+        self.motor_encoders = motor_encoders
+        self.ir_sensor = ir_sensor
+
+
+
+if __name__ == "__main__":
+    general = General()
+    general.execute_mission() 

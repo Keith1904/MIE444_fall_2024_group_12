@@ -1,18 +1,16 @@
 class Recon:
     '''This class collects data from sensors and relays it to scout and pathfinder.'''
-    def __init__(self, distance_sensors, motor_encoders):
-        self.distance_sensors = distance_sensors
-        self.motor_encoders = motor_encoders
         
-    def check_sensors(self, sensor_ids, radioOperator):
+    def check_sensors(self, robot, sensor_ids, radioOperator):
         readings = radioOperator.transmit(sensor_ids)
         for i, sensor_id in enumerate(sensor_ids):
-            if sensor_id[0] == "u" or sensor_id[0] == "t":
-                self.distance_sensors[sensor_id]["reading"] = readings[i]
+            
+            if sensor_id[0] == "u" or sensor_id[0] == "t" or sensor_id[0] == "i":
+                robot.distance_sensors[sensor_id]["reading"] = readings[i]
             
             elif sensor_id[0] == "e":
-                self.motor_encoders[sensor_id]["previous_reading"] = self.motor_encoders[sensor_id]["reading"]
-                self.motor_encoders[sensor_id]["reading"] = readings[i]
+                robot.motor_encoders[sensor_id]["previous_reading"] = robot.motor_encoders[sensor_id]["reading"]
+                robot.motor_encoders[sensor_id]["reading"] = readings[i]
         
 # class Sensor:
 #     '''Generic sensor class'''

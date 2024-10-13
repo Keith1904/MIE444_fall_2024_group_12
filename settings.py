@@ -31,6 +31,10 @@ motor_encoders = {
     "e1": {"x": x, "y": y, "reading": 0, "previous_reading": 0}
 }
 
+ir_sensor = {
+    "i0": {"x": x, "y": y, "reading": 0}
+}
+
 ### Network Setup ###
 HOST = '127.0.0.1'      # The server's hostname or IP address
 PORT_TX = 61200         # The port used by the *CLIENT* to receive
