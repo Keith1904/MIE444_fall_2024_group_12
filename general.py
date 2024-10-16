@@ -25,15 +25,15 @@ class General:
             SIMULATE=SETTINGS.SIMULATE,
             TRANSMIT_PAUSE=SETTINGS.TRANSMIT_PAUSE
             )
-        self.pathfinder = MotorSergeant()
+        self.pathfinder = Pathfinder(self, self.robot)
         self.scout = Scout(self, self.maze, self.robot)
         self.motorSergeant = MotorSergeant(self, self.motorSergeant)
         self.recon = Recon()
         
     def execute_mission(self):
         self.recon.check_sensors(self.robot, ['u0', 'u1', 'u2', 'u3', 'm0', 'm1', 'i0'], self.radioOperator)
-        location = self.scout.localize(self.robot)
-        path = self.pathfinder.chart_path(location)
+        #self.scout.localize(self.robot)
+        path = self.pathfinder.chart_path()
         self.motorSergeant.move_along(path)
         if self.motorSergeant.check_for_obstacles():
             self.motorSergeant.emergency_stop()  # Emergency stop if crash detected
@@ -53,6 +53,9 @@ class Robot:
         self.distance_sensors = distance_sensors
         self.motor_encoders = motor_encoders
         self.ir_sensor = ir_sensor
+        self.x = None
+        self.y = None
+        self.direction = None  
 
 
 
