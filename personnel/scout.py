@@ -36,7 +36,7 @@ class Scout:
         return False
     
     def predict(self):
-        
+        pass   
         
         
                 

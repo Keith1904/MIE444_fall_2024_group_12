@@ -11,7 +11,7 @@ class General:
     
     def __init__(self):
         self.maze = Maze()
-        self.robot = Robot()
+        self.robot = Robot(SETTINGS.distance_sensors, SETTINGS.motor_encoders, SETTINGS.ir_sensor)
         self.radioOperator = RadioOperator(
             HOST=SETTINGS.HOST,
             PORT_TX=SETTINGS.PORT_TX,
@@ -26,17 +26,17 @@ class General:
             TRANSMIT_PAUSE=SETTINGS.TRANSMIT_PAUSE
             )
         self.pathfinder = Pathfinder(self, self.robot)
-        self.scout = Scout(self, self.maze, self.robot)
-        self.motorSergeant = MotorSergeant(self, self.motorSergeant)
+        #self.scout = Scout(self, self.maze, self.robot)
+        self.motorSergeant = MotorSergeant(self.radioOperator)
         self.recon = Recon()
         
     def execute_mission(self):
-        self.recon.check_sensors(self.robot, ['u0', 'u1', 'u2', 'u3', 'm0', 'm1', 'i0'], self.radioOperator)
+        self.recon.check_sensors(self.robot, ['u0', 'u1', 'u2', 'u3'], self.radioOperator)
         #self.scout.localize(self.robot)
-        path = self.pathfinder.chart_path()
-        self.motorSergeant.move_along(path)
-        if self.motorSergeant.check_for_obstacles():
-            self.motorSergeant.emergency_stop()  # Emergency stop if crash detected
+        self.pathfinder.wall_alignment()
+        #self.motorSergeant.move_along(path)
+        #if self.motorSergeant.check_for_obstacles():
+        #    self.motorSergeant.emergency_stop()  # Emergency stop if crash detected
             
 class Maze:
     '''Defines static characteristics of the maze.'''

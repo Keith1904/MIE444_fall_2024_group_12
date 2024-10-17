@@ -33,10 +33,15 @@ class RadioOperator:
         self.CMD_DELIMITER = CMD_DELIMITER
         self.SIMULATE = SIMULATE
         self.TRANSMIT_PAUSE = TRANSMIT_PAUSE
-        self.SER = serial.Serial(self.PORT_SERIAL, self.BAUDRATE, timeout=self.TIMEOUT_SERIAL)
-        
-        
-        
+        try:
+            self.SER = serial.Serial(self.PORT_SERIAL, self.BAUDRATE, timeout=self.TIMEOUT_SERIAL)
+        except serial.SerialException:
+            print(f'Serial connection was refused.\nEnsure {PORT_SERIAL} is the correct port and nothing else is connected to it.')
+            
+    def broadcast(self, data):
+        packet_tx = self.packetize(data)
+        self.transmit(packet_tx)  
+ 
     # Wrapper functions
     def transmit(self, data):
         '''Selects whether to use serial or tcp for transmitting.'''

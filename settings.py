@@ -19,20 +19,20 @@ wheel_circumference = 2.55906   # Circumference of wheels (inches)
 
 # Sensor Settings
 distance_sensors = {
-    "u0": {"x": x, "y": y, "rotation": 0, "reading": 0},
-    "u1": {"x": x, "y": y, "rotation": 90, "reading": 0},
-    "u2": {"x": x, "y": y, "rotation": 180, "reading": 0},
-    "u3": {"x": x, "y": y, "rotation": 270, "reading": 0},
-    "t0": {"x": x, "y": y, "rotation": 0, "reading": 0}   
+    "u0": {"x": 0, "y": 0, "rotation": 0, "reading": 0},
+    "u1": {"x": 0, "y": 0, "rotation": 90, "reading": 0},
+    "u2": {"x": 0, "y": 0, "rotation": 180, "reading": 0},
+    "u3": {"x": 0, "y": 0, "rotation": 270, "reading": 0},
+    "t0": {"x": 0, "y": 0, "rotation": 0, "reading": 0}   
 }
 
 motor_encoders = {
-    "e0": {"x": x, "y": y, "reading": 0, "previous_reading": 0},
-    "e1": {"x": x, "y": y, "reading": 0, "previous_reading": 0}
+    "e0": {"x": 0, "y": 0, "reading": 0, "previous_reading": 0},
+    "e1": {"x": 0, "y": 0, "reading": 0, "previous_reading": 0}
 }
 
 ir_sensor = {
-    "i0": {"x": x, "y": y, "reading": 0}
+    "i0": {"x": 0, "y": 0, "reading": 0}
 }
 
 ### Network Setup ###
