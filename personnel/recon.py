@@ -12,5 +12,21 @@ class Recon:
             elif sensor_id[0] == "e":
                 robot.motor_encoders[sensor_id]["previous_reading"] = robot.motor_encoders[sensor_id]["reading"]
                 robot.motor_encoders[sensor_id]["reading"] = float(reading[1])
+    
+    def find_closest_sensor(self, robot):
+        min_reading = float('inf')
+        closest_sensor_id = None
+
+        # Iterate through each sensor in the robot's distance sensors
+        for sensor_id, sensor_data in robot.distance_sensors.items():
+            # Get the reading from the current sensor
+            reading = sensor_data["reading"]
+
+            # Check if this reading is the smallest one found so far
+            if reading < min_reading and sensor_id[0] == "u":
+                min_reading = reading
+                closest_sensor_id = sensor_id
+
+        return closest_sensor_id, min_reading
         
         

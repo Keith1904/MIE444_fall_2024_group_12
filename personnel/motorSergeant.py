@@ -4,6 +4,7 @@ class MotorSergeant:
     '''This class issues all motion commands.'''
     def __init__(self, radioOperator):
         self.radioOperator = radioOperator
+        self.movement_in_progress = False
         
     def drive(self, distance):
         self.stop()
