@@ -5,6 +5,7 @@ from personnel.recon import Recon
 from personnel.radioOperator import RadioOperator
 import settings as SETTINGS
 import time
+import threading
 
 class General:
     '''Interfaces with all other classes and coordinates all operations.'''
@@ -29,10 +30,13 @@ class General:
         #self.scout = Scout(self, self.maze, self.robot)
         self.motorSergeant = MotorSergeant(self.radioOperator)
         self.recon = Recon()
+        print("hello?")
+        self.sensor_thread = threading.Thread(target=self.recon.check_sensors, args = (self.robot, ['u0', 'u1', 'u2', 'u3', 'm0', 'm1'], self.radioOperator), daemon=True)
         
     def execute_mission(self):
-        self.recon.check_sensors(self.robot, ['u0', 'u1', 'u2', 'u3'], self.radioOperator)
+        #self.recon.check_sensors(self.robot, ['u0', 'u1', 'u2', 'u3'], self.radioOperator)
         #self.scout.localize(self.robot)
+        self.sensor_thread.start()
         self.wall_alignment()
         #self.motorSergeant.move_along(path)
         #if self.motorSergeant.check_for_obstacles():
@@ -44,7 +48,6 @@ class General:
         closest_sensor_id, previous_reading = self.recon.find_closest_sensor(self.robot)
         aligned = False
         self.motorSergeant.rotate(5)
-        self.recon.check_sensors(self.robot, ['u0', 'u1', 'u2', 'u3'], self.radioOperator)
         
         if self.robot.distance_sensors[closest_sensor_id]["reading"] < previous_reading:
             direction = 1
@@ -58,8 +61,7 @@ class General:
             
             # Get readings for all sensors
             sensor_ids = ['u0', 'u1', 'u2', 'u3']
-            self.recon.check_sensors(self.robot, sensor_ids, self.radioOperator)
-            
+            time.sleep(0.1)
             # Record the current readings
             current_readings = {sensor_id: self.robot.distance_sensors[sensor_id]["reading"] for sensor_id in sensor_ids}
             
