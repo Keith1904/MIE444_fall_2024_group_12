@@ -13,6 +13,10 @@ class MotorSergeant:
     def rotate(self, angle):
         self.stop()
         self.radioOperator.broadcast("r0:" + str(angle))
+    
+    def issue_command(self, cmd):
+        self.stop()
+        self.radioOperator.broadcast(cmd)
 
     def stop(self):
         self.radioOperator.broadcast("xx")

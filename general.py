@@ -1,11 +1,12 @@
+import time
+import threading
+import keyboard
 from personnel.motorSergeant import MotorSergeant
 from personnel.scout import Scout
 from personnel.pathfinder import Pathfinder
 from personnel.recon import Recon
 from personnel.radioOperator import RadioOperator
 import settings as SETTINGS
-import time
-import threading
 
 class General:
     '''Interfaces with all other classes and coordinates all operations.'''
@@ -30,14 +31,27 @@ class General:
         #self.scout = Scout(self, self.maze, self.robot)
         self.motorSergeant = MotorSergeant(self.radioOperator)
         self.recon = Recon()
-        print("hello?")
+        self.mode = "auto"
         self.sensor_thread = threading.Thread(target=self.recon.check_sensors, args = (self.robot, ['u0', 'u1', 'u2', 'u3', 'm0', 'm1'], self.radioOperator), daemon=True)
+        self.manual_control_thread = threading.Thread(target=self.manual_control, daemon=True)
+        self.last_input = ''
+        
         
     def execute_mission(self):
-        #self.recon.check_sensors(self.robot, ['u0', 'u1', 'u2', 'u3'], self.radioOperator)
         #self.scout.localize(self.robot)
         self.sensor_thread.start()
+        self.manual_control_thread.start()
         self.wall_alignment()
+        while True:
+            if self.mode == 'auto':
+                if self.motorSergeant.movement_in_progress():
+                    self.motorSergeant.check_for_collision()
+                    time.sleep(0.1)
+                else:
+                    distance, direction = self.pathfinder.find_furthest_distance()
+                    self.motorSergeant.rotate
+            else:
+                time.sleep(0.5)
         #self.motorSergeant.move_along(path)
         #if self.motorSergeant.check_for_obstacles():
         #    self.motorSergeant.emergency_stop()  # Emergency stop if crash detected
@@ -82,7 +96,48 @@ class General:
 
         # Fine-tune by reversing half the step size if needed
         self.motorSergeant.rotate(-step_size / 2 * direction)
-        time.sleep(0.1)  # Allow time for stabilization after reversing        
+        time.sleep(0.1)  # Allow time for stabilization after reversing
+                
+    def manual_control(self):
+        while True:
+            if self.mode == 'manual':
+                if keyboard.is_pressed('w'):
+                    if self.last_input != 'w':
+                        self.motorSergeant.stop()
+                        self.motorSergeant.drive(100)
+                        self.last_input = 'w' 
+                elif keyboard.is_pressed('a'):
+                    if self.last_input != 'a':
+                        self.motorSergeant.stop()
+                        self.motorSergeant.rotate(-360)
+                        self.last_input = 'a'
+                elif keyboard.is_pressed('s'):
+                    if self.last_input != 's':
+                        self.motorSergeant.stop()
+                        self.motorSergeant.drive(-100)
+                        self.last_input = 's'
+                elif keyboard.is_pressed('d'):
+                    if self.last_input != 'd':
+                        self.motorSergeant.stop()
+                        self.motorSergeant.rotate(360)
+                        self.last_input = 'd'
+                else:
+                    if self.last_input != '':
+                        self.motorSergeant.stop()
+                        self.last_input = ''
+            # Check for mode switching keys
+            if keyboard.is_pressed('m'):
+                self.mode = 'manual'
+                print("Switched to manual mode.")
+                time.sleep(0.1)  # Small delay to avoid multiple detections
+            elif keyboard.is_pressed('p'):
+                self.mode = 'auto'
+                print("Switched to autonomous mode.")
+                time.sleep(0.1)
+
+            time.sleep(0.1)  # Prevent excessive CPU usage
+
+            
 class Maze:
     '''Defines static characteristics of the maze.'''
     def __init__(self):
