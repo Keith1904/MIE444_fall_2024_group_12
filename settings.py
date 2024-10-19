@@ -16,19 +16,20 @@ num_particles = 20
 # Robot Characteristics
 wheel_distance = 7.3            # Distance between wheels (inches)
 wheel_circumference = 2.55906   # Circumference of wheels (inches)
+radius = 4.75                   # Overall radius of the robot (inches)
 
 # Sensor Settings
 distance_sensors = {
-    "u0": {"x": 0, "y": 0, "rotation": 0, "reading": 0},
-    "u1": {"x": 0, "y": 0, "rotation": 90, "reading": 0},
-    "u2": {"x": 0, "y": 0, "rotation": 180, "reading": 0},
-    "u3": {"x": 0, "y": 0, "rotation": 270, "reading": 0},
-    "t0": {"x": 0, "y": 0, "rotation": 0, "reading": 0}   
+    "u0": {"x": 0, "y": 3.99, "rotation": 0, "reading": 0, "previous_reading": 0},
+    "u1": {"x": 3.22, "y": 0, "rotation": 90, "reading": 0, "previous_reading": 0},
+    "u2": {"x": 0, "y": -3.45, "rotation": 180, "reading": 0, "previous_reading": 0},
+    "u3": {"x": 3.22, "y": 0, "rotation": 270, "reading": 0, "previous_reading": 0},
+  #  "t0": {"x": 0, "y": 0, "rotation": 0, "reading": 0}   
 }
 
 motor_encoders = {
-    "e0": {"x": 0, "y": 0, "reading": 0, "previous_reading": 0},
-    "e1": {"x": 0, "y": 0, "reading": 0, "previous_reading": 0}
+    "m0": {"x": 0, "y": 0, "reading": 0, "previous_reading": 0},
+    "m1": {"x": 0, "y": 0, "reading": 0, "previous_reading": 0}
 }
 
 ir_sensor = {

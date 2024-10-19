@@ -27,7 +27,7 @@ class General:
             SIMULATE=SETTINGS.SIMULATE,
             TRANSMIT_PAUSE=SETTINGS.TRANSMIT_PAUSE
             )
-        self.pathfinder = Pathfinder(self, self.robot)
+        self.pathfinder = Pathfinder()
         #self.scout = Scout(self, self.maze, self.robot)
         self.motorSergeant = MotorSergeant(self.radioOperator)
         self.recon = Recon()
@@ -41,23 +41,25 @@ class General:
         #self.scout.localize(self.robot)
         self.sensor_thread.start()
         self.manual_control_thread.start()
-        self.wall_alignment()
         while True:
             if self.mode == 'auto':
-                if self.motorSergeant.movement_in_progress():
-                    self.motorSergeant.check_for_collision()
+                if self.motorSergeant.movement_in_progress(self.robot):
+                    self.motorSergeant.check_for_collision(self.robot)
                     time.sleep(0.1)
                 else:
-                    distance, direction = self.pathfinder.find_furthest_distance()
-                    self.motorSergeant.rotate
+                    #self.wall_alignment()
+                    distance, direction = self.pathfinder.find_furthest_distance(self.robot)
+                    self.motorSergeant.rotate(direction)
+                    time.sleep(0.1)
+                    while self.motorSergeant.movement_in_progress(self.robot):
+                        time.sleep(0.3)
+                    self.motorSergeant.drive(distance - 2)
+                    time.sleep(0.5)
             else:
                 time.sleep(0.5)
-        #self.motorSergeant.move_along(path)
-        #if self.motorSergeant.check_for_obstacles():
-        #    self.motorSergeant.emergency_stop()  # Emergency stop if crash detected
 
     def wall_alignment(self):
-        
+        print("Aligning with wall...")
         step_size = 2  # Small rotation step (adjust as needed)
         closest_sensor_id, previous_reading = self.recon.find_closest_sensor(self.robot)
         aligned = False
@@ -85,10 +87,6 @@ class General:
                 if current_readings[sensor_id] >= previous_readings[sensor_id]:
                     num_sensors_at_min += 1
                 
-            
-            print(f"Current Readings: {current_readings}")
-            print(f"Previous Readings: {previous_readings}")
-            print(f"Sensors at Minimum: {num_sensors_at_min}")
             previous_readings = current_readings
             # If at least 3 sensors are at their minimum, consider it aligned
             if num_sensors_at_min >= 3:
@@ -97,7 +95,8 @@ class General:
         # Fine-tune by reversing half the step size if needed
         self.motorSergeant.rotate(-step_size / 2 * direction)
         time.sleep(0.1)  # Allow time for stabilization after reversing
-                
+        print("Alignment done!")       
+    
     def manual_control(self):
         while True:
             if self.mode == 'manual':
@@ -155,7 +154,8 @@ class Robot:
         self.ir_sensor = ir_sensor
         self.x = None
         self.y = None
-        self.direction = None  
+        self.direction = None
+        self.radius = SETTINGS.radius
 
 
 
