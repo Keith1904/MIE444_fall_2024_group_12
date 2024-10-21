@@ -6,6 +6,7 @@ class MotorSergeant:
     '''This class issues all motion commands.'''
     def __init__(self, radioOperator):
         self.radioOperator = radioOperator
+        self.reset = True
         
     def drive(self, distance):
         self.stop()
@@ -38,9 +39,6 @@ class MotorSergeant:
         for sensor_id, sensor_data in distance_sensors_copy.items():
             reading = sensor_data["reading"]
             sensor_distance = math.sqrt(sensor_data['x']**2 + sensor_data['y']**2)
-            print(sensor_data['y'])
-            print(f"reading: {reading}")
-            print(reading - sensor_distance + robot.radius)
             if reading + sensor_distance - robot.radius < 1 and reading <= sensor_data["previous_reading"]:
                 print("Obstacle detected! Stopping...")
                 self.stop()
@@ -48,11 +46,28 @@ class MotorSergeant:
                 if sensor_id == 'u1':
                     delta_sensor = sensor_data["reading"] - sensor_data["previous_reading"]
                     delta_encoder = motor_encoders_copy["m0"]["reading"] - motor_encoders_copy["m0"]["previous_reading"]
+                    print(f"delta_sensor: {abs(delta_sensor)}")
+                    print(f"delta_encoder: {delta_encoder}")
                     angle_deviation = np.arctan(delta_sensor / delta_encoder)
                     self.rotate(-(angle_deviation + 2))
-                if sensor_id == 'u3':
+                    time.sleep(0.2)
+                    while self.movement_in_progress(robot):
+                        time.sleep(0.1)
+                    self.drive(robot.distance_sensors["u0"]["reading"] - 1)
+                    time.sleep(0.2)
+                    break
+                elif sensor_id == 'u3':
                     delta_sensor = sensor_data["reading"] - sensor_data["previous_reading"]
                     delta_encoder = motor_encoders_copy["m0"]["reading"] - motor_encoders_copy["m0"]["previous_reading"]
+                    print(f"delta_sensor: {delta_sensor}")
+                    print(f"delta_encoder: {delta_encoder}")
                     angle_deviation = np.arctan(delta_sensor / delta_encoder)
                     self.rotate(angle_deviation + 2)
+                    time.sleep(0.2)
+                    while self.movement_in_progress(robot):
+                        time.sleep(0.1)
+                    self.drive(robot.distance_sensors["u0"]["reading"] - 1)
+                    time.sleep(0.5)
+                    break
+                self.reset = True
                 break

@@ -34,27 +34,32 @@ class General:
         self.mode = "auto"
         self.sensor_thread = threading.Thread(target=self.recon.check_sensors, args = (self.robot, ['u0', 'u1', 'u2', 'u3', 'm0', 'm1'], self.radioOperator), daemon=True)
         self.manual_control_thread = threading.Thread(target=self.manual_control, daemon=True)
+        self.sensor_thread.start()
+        self.manual_control_thread.start()
         self.last_input = ''
         
         
     def execute_mission(self):
         #self.scout.localize(self.robot)
-        self.sensor_thread.start()
-        self.manual_control_thread.start()
         while True:
             if self.mode == 'auto':
-                if self.motorSergeant.movement_in_progress(self.robot):
-                    self.motorSergeant.check_for_collision(self.robot)
-                    time.sleep(0.1)
-                else:
-                    #self.wall_alignment()
+                if self.motorSergeant.reset:
+                    self.wall_alignment()
                     distance, direction = self.pathfinder.find_furthest_distance(self.robot)
                     self.motorSergeant.rotate(direction)
                     time.sleep(0.1)
                     while self.motorSergeant.movement_in_progress(self.robot):
                         time.sleep(0.3)
-                    self.motorSergeant.drive(distance - 2)
+                    self.motorSergeant.drive(distance - 1)
+                    self.motorSergeant.reset = False
                     time.sleep(0.5)
+                if self.motorSergeant.movement_in_progress(self.robot):
+                    self.motorSergeant.check_for_collision(self.robot)
+                    time.sleep(0.1)
+                else:
+                    time.sleep(0.5)
+                    if not self.motorSergeant.movement_in_progress(self.robot):
+                        self.motorSergeant.reset = True
             else:
                 time.sleep(0.5)
 
@@ -161,4 +166,5 @@ class Robot:
 
 if __name__ == "__main__":
     general = General()
-    general.execute_mission() 
+    general.execute_mission()
+    #general.wall_alignment()
