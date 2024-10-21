@@ -7,6 +7,7 @@ class MotorSergeant:
     def __init__(self, radioOperator):
         self.radioOperator = radioOperator
         self.reset = True
+        self.reset_cooldown = 0
         
     def drive(self, distance):
         self.stop()
@@ -70,4 +71,28 @@ class MotorSergeant:
                     time.sleep(0.5)
                     break
                 self.reset = True
+            elif 2 < reading + sensor_distance - robot.radius < 5 and reading >= sensor_data["previous_reading"]:
+                if sensor_id == "u1":
+                    self.rotate(2)
+                    time.sleep(0.2)
+                    while self.movement_in_progress(robot):
+                        time.sleep(0.1)
+                    self.drive(robot.distance_sensors["u0"]["reading"] - 1)
+                    time.sleep(0.2)
+                elif sensor_id == "u3":
+                    self.rotate(-2)
+                    time.sleep(0.2)
+                    while self.movement_in_progress(robot):
+                        time.sleep(0.1)
+                    self.drive(robot.distance_sensors["u0"]["reading"] - 1)
+                    time.sleep(0.2)
+            elif reading > distance_sensors_copy["u0"]["reading"] + 8 and (sensor_id == "u1" or sensor_id == "u3") and motor_encoders_copy["m0"]["reading"] > self.reset_cooldown + 6:
+                self.stop()
+                time.sleep(0.1)
+                self.drive(3)
+                time.sleep(0.3)
+                while self.movement_in_progress(robot):
+                    time.sleep(0.1)
+                self.reset = True
+                self.reset_cooldown = robot.motor_encoders["m0"]["reading"]
                 break
