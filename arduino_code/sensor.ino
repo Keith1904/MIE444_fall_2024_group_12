@@ -36,6 +36,12 @@ int Ard_TX_Pin = A4;
 // Definition of constants
 float V_Sound = 0.0135; //Velocity of sounds in in/us
 
+int pingTime;
+int U0_Length;
+int U1_Length;
+int U2_Length;
+int U3_Length;
+
 void setup() {
   // put your setup code here, to run once:
 
@@ -71,6 +77,8 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+
+
 
 }
 
@@ -177,5 +185,12 @@ float U3_Check() {
   U3_Length = pingTime * V_Sound * 0.5  // U3 length in inches
 
   return U3_Length;
+
+}
+
+void Transmit_mot_command(command) {
+// sends 'command' over serial to the actuation arduino
+
+
 
 }
