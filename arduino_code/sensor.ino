@@ -94,9 +94,12 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-
-
-
+  Receive_Data();
+  if (Check_Command(Receive_Com)) {
+    // Call to function to process data for drive command goes here
+  } else {
+    // Call to function to process data for sensor command goes here
+  }
 }
 
 void DCM1_Enc_Update() {
@@ -196,7 +199,7 @@ void Receive_Data() {
 
 bool Check_Command(Receive_Com) {
   //Check and return true if drive command, false if sensor command
-  if(Receive_Com[0] == 'w')
+  if(Receive_Com[0] == 'w' || Receive_Com[0] == 'r')
   {
     return true;
   }
@@ -204,6 +207,43 @@ bool Check_Command(Receive_Com) {
   {
     return false;
   }
+}
+
+void Process_Sensor_Com() {
+    String result = "[";
+    char* token = strtok(Receive_Com, ",");  // Split Receive_com by delimiter (commas)
+
+    while (token != NULL) {
+        String tokenStr = String(token);
+        float output;
+
+        if (tokenStr == "u0") {
+            output = U0_check();
+        } else if (tokenStr == "u1") {
+            output = U1_check();
+        } else if (tokenStr == "u2") {
+            output = U2_check();
+        } else if (tokenStr == "u3") {
+            output = U3_check();
+        }
+        else if (tokenStr == "m0") {
+            output = M2_check();
+        }
+        else if (tokenStr == "m1") {
+            output = M1_check();
+        }
+
+        // Append to result in proper format
+        result += tokenStr + ":" + String(output, 2) + ",";
+        
+        token = strtok(NULL, ",");  // Move to the next token
+    }
+
+    // Remove the last comma and close the bracket
+    result.remove(result.length() - 1);
+    result += "]";
+
+    Serial.print(result)
 }
 
 float U0_Check() {
@@ -276,4 +316,12 @@ float U3_Check() {
 
   return U3_Length;
 
+}
+
+float M1_Check() {
+  return DCM1_Enc_Count
+}
+
+float M2_check() {
+  return DCM2_Enc_Count
 }
