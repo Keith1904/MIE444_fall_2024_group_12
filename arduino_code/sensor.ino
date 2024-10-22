@@ -35,6 +35,14 @@ int Ard_TX_Pin = A4;
 
 // Definition of constants
 float V_Sound = 0.0135; //Velocity of sounds in in/us
+int Wheel_Dia = 65; //Wheel diameter in mm
+int Enc_Res = 11; //Encoder pulses per full revolution
+int Gear_Ratio = 34; //DC motor gear ratio
+float Dist_Per_Pulse; //Distance travelled per encoder pulse
+
+//Array to store US/DRIVE command
+const byte Num_Char = 32; //Size of byte array
+char Receive_Com[Num_Char]; //Character array to store commands WITHOUT BRACKETS
 
 int pingTime;
 int U0_Length;
@@ -70,9 +78,10 @@ void setup() {
   
   pinMode(TofF_OutA_Pin, INPUT);
   pinMode(TofF_OutB_Pin, INPUT);
-  
-  SoftwareSerial ArdSerial(Ard_RX_Pin, Ard_TX_Pin);
 
+  SoftwareSerial ArdSerial(Ard_RX_Pin, Ard_TX_Pin);
+  ArdSerial.begin(9600); //Start serial communication with actuation arduino
+  Serial.begin(9600); //Start serial communication with bluetooth module
 }
 
 void loop() {
@@ -116,6 +125,63 @@ void DCM2_Enc_Update() {
   }
 }
 
+float Enc_Dist() {
+  //Converts encoder pulses to distance based on wheel diameter
+  float Wheel_Circ = 3.14159*Wheel_Dia;
+  int Pulse_Per_Rev = Enc_Res*Gear_Ratio;
+  Dist_Per_Pulse = Wheel_Circ/Pulse_Per_Rev;
+  return Dist_Per_Pulse;
+}
+
+void Receive_Data() {
+  char data;
+  static byte count = 0;
+  static bool Receive_Inpr = false;
+  static bool New_Data = false;
+  char Com_Start = '['; // Command start character marker
+  char Com_End = ']';   // Command end character marker
+
+  while(Serial.available() > 0 && New_Data == false)
+  {
+    data = Serial.read();
+    if(Receive_Inpr == true)
+    {
+      if(data != Com_End)
+      {
+        Recieve_Com[count] = data;
+        count++; 
+        if(count >= Num_Char)
+        {
+          count = Num_Char - 1;
+        }
+      }
+      else
+      {
+        Receive_Com[count] = '\0';
+        Receive_Inpr = false;
+        count = 0;
+        New_Data = true;
+      }
+    }
+    else if(data == Com_Start)
+    {
+      Receive_Inpr = true;
+    }
+  }
+}
+
+bool Check_Command(Receive_Com) {
+  //Check and return true if drive command, false if sensor command
+  if(Receive_Com[0] == 'w')
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
 float U0_Check() {
 // When called will check the forward ultrasonic sensor
 // returns a length float
@@ -124,7 +190,7 @@ float U0_Check() {
   delayMicroseconds(2000);          //adjustable delay
   digitalWrite(U0_Trig_Pin, HIGH);  //trigger for 10 us
   delayMicroseconds(10);
-  digitialWrite(U0_Trig_Pin, LOW);
+  digitalWrite(U0_Trig_Pin, LOW);
 
   pingTime = pulseIn(U0_Echo_Pin, HIGH);  // reads echo pin
 
@@ -142,7 +208,7 @@ float U1_Check() {
   delayMicroseconds(2000);          //adjustable delay
   digitalWrite(U1_Trig_Pin, HIGH);  //trigger for 10 us
   delayMicroseconds(10);
-  digitialWrite(U1_Trig_Pin, LOW);
+  digitalWrite(U1_Trig_Pin, LOW);
 
   pingTime = pulseIn(U1_Echo_Pin, HIGH);  // reads echo pin
 
@@ -160,7 +226,7 @@ float U2_Check() {
   delayMicroseconds(2000);          //adjustable delay
   digitalWrite(U2_Trig_Pin, HIGH);  //trigger for 10 us
   delayMicroseconds(10);
-  digitialWrite(U2_Trig_Pin, LOW);
+  digitalWrite(U2_Trig_Pin, LOW);
 
   pingTime = pulseIn(U2_Echo_Pin, HIGH);  // reads echo pin
 
@@ -178,19 +244,12 @@ float U3_Check() {
   delayMicroseconds(2000);          //adjustable delay
   digitalWrite(U3_Trig_Pin, HIGH);  //trigger for 10 us
   delayMicroseconds(10);
-  digitialWrite(U3_Trig_Pin, LOW);
+  digitalWrite(U3_Trig_Pin, LOW);
 
   pingTime = pulseIn(U3_Echo_Pin, HIGH);  // reads echo pin
 
   U3_Length = pingTime * V_Sound * 0.5  // U3 length in inches
 
   return U3_Length;
-
-}
-
-void Transmit_mot_command(command) {
-// sends 'command' over serial to the actuation arduino
-
-
 
 }
