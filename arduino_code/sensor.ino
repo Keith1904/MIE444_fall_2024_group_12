@@ -1,4 +1,6 @@
 #include <SoftwareSerial.h>
+#include <math.h>
+#define _USE_MATH_DEFINES
 
 // Bluetooth Serial Communication Pins
 int BT_RX_Pin = 0;
@@ -35,22 +37,23 @@ int Ard_TX_Pin = A4;
 
 // Definition of constants
 float V_Sound = 0.0135; //Velocity of sounds in in/us
-int Wheel_Dia = 65; //Wheel diameter in mm
+float Wheel_Dia = 2.55906; //Wheel diameter in inches
 int Enc_Res = 11; //Encoder pulses per full revolution
 int Gear_Ratio = 34; //DC motor gear ratio
-float Dist_Per_Pulse; //Distance travelled per encoder pulse
+float Dist_Per_Pulse = 0.0197; //Distance travelled per encoder pulse in inches
 
 //Array to store US/DRIVE command
 const byte Num_Char = 32; //Size of byte array
 char Receive_Com[Num_Char]; //Character array to store commands WITHOUT BRACKETS
+float Drive_Val; //Store extracted drive command numerical value
 
 // DC Motor Encoder Counts and Movement Tracking
-DCM1_Enc_Count = 0;
-DCM2_Enc_Count = 0;
-DCM1_Target;
-DCM2_Target;
-DCM1_in_progress = false;
-DCM2_in_progress = false;
+int DCM1_Enc_Count = 0;
+int DCM2_Enc_Count = 0;
+int DCM1_Target = 0;
+int DCM2_Target = 0;
+bool DCM1_in_progress = false;
+bool DCM2_in_progress = false;
 
 int pingTime;
 int U0_Length;
@@ -152,12 +155,9 @@ void DCM2_Enc_Update() {
   }
 }
 
-float Enc_Dist() {
-  //Converts encoder pulses to distance based on wheel diameter
-  float Wheel_Circ = 3.14159*Wheel_Dia;
-  int Pulse_Per_Rev = Enc_Res*Gear_Ratio;
-  Dist_Per_Pulse = Wheel_Circ/Pulse_Per_Rev;
-  return Dist_Per_Pulse;
+int Pulse_Target() {
+  DCM1_Target = int(round(Drive_Val/Dist_Per_Pulse));
+  DCM2_Target = DCM1_Target;
 }
 
 void Receive_Data() {
@@ -197,15 +197,24 @@ void Receive_Data() {
   }
 }
 
-bool Check_Command(Receive_Com) {
-  //Check and return true if drive command, false if sensor command
-  if(Receive_Com[0] == 'w' || Receive_Com[0] == 'r')
+void Process_Drive_Com(Receive_Com) {
+  char Drive_Com[];
+  for(int i=0; i<strlen(Receive_Com)-3, i++)
   {
-    return true;
+    Drive_Com[i] = Receive_Com[i+3];
+  }
+  Drive_Val = atof(Drive_Com);
+}
+
+bool Check_Com() {
+  //Check and return true if drive command, false if sensor command
+  if(Receive_Com[0] == 'u')
+  {
+    return false;
   }
   else
   {
-    return false;
+    return true;
   }
 }
 
