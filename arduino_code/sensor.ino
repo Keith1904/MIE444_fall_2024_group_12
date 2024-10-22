@@ -36,6 +36,14 @@ int Ard_TX_Pin = A4;
 // Definition of constants
 float V_Sound = 0.0135; //Velocity of sounds in in/us
 
+// DC Motor Encoder Counts and Movement Tracking
+DCM1_Enc_Count = 0;
+DCM2_Enc_Count = 0;
+DCM1_Target;
+DCM2_Target;
+DCM1_in_progress = false;
+DCM2_in_progress = false;
+
 int pingTime;
 int U0_Length;
 int U1_Length;
@@ -87,15 +95,23 @@ void DCM1_Enc_Update() {
   if (digitalRead(DCM1_EncA_Pin) == HIGH) {
     if (digitalRead(DCM1_EncB_Pin) == LOW) {
       DCM1_Enc_Count++;
+      DCM1_Target++;
     } else {
       DCM1_Enc_Count--;
+      DCM1_Target--;
     }
   } else {
     if (digitalRead(DCM1_EncB_Pin) == LOW) {
       DCM1_Enc_Count--;
+      DCM1_Target--;
     } else {
       DCM1_Enc_Count++;
+      DCM1_Target++;
     }
+  }
+  if (DCM1_in_progress && DCM1_Target == 0) {
+    Transmit_mot_command(stop motor 1) // *** Needs to be updated when commands are finalized
+    DCM1_in_progress = false
   }
 }
 
@@ -104,15 +120,23 @@ void DCM2_Enc_Update() {
   if (digitalRead(DCM2_EncA_Pin) == HIGH) {
     if (digitalRead(DCM2_EncB_Pin) == LOW) {
       DCM2_Enc_Count++;
+      DCM2_Target++;
     } else {
       DCM2_Enc_Count--;
+      DCM2_Target--;
     }
   } else {
     if (digitalRead(DCM2_EncB_Pin) == LOW) {
       DCM2_Enc_Count--;
+      DCM2_Target--;
     } else {
       DCM2_Enc_Count++;
+      DCM2_Target++;
     }
+  }
+  if (DCM2_in_progress && DCM2_Target == 0) {
+    Transmit_mot_command(stop motor 2) // *** Needs to be updated when commands are finalized
+    DCM2_in_progress = false
   }
 }
 
