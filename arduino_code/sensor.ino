@@ -98,8 +98,8 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   Receive_Data();
-  if (Check_Command(Receive_Com)) {
-    // Call to function to process data for drive command goes here
+  if (Check_Com(Receive_Com)) {
+    Process_Sensor_Com();
   } else {
     // Call to function to process data for sensor command goes here
   }
@@ -251,7 +251,7 @@ void Process_Sensor_Com() {
     // Remove the last comma and close the bracket
     result.remove(result.length() - 1);
     result += "]";
-
+    Receive_Com[0] = "\0"
     Serial.print(result)
 }
 
