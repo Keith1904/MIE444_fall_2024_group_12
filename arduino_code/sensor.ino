@@ -41,11 +41,13 @@ float Wheel_Dia = 2.55906; //Wheel diameter in inches
 int Enc_Res = 11; //Encoder pulses per full revolution
 int Gear_Ratio = 34; //DC motor gear ratio
 float Dist_Per_Pulse = 0.0197; //Distance travelled per encoder pulse in inches
+float Wheel_Dist = 7.25; //wheel to wheel distance in inchess
 
 //Array to store US/DRIVE command
 const byte Num_Char = 32; //Size of byte array
 char Receive_Com[Num_Char]; //Character array to store commands WITHOUT BRACKETS
 float Drive_Val; //Store extracted drive command numerical value
+float Rotate_Val; //Store extracted rotate command numerical value
 
 // DC Motor Encoder Counts and Movement Tracking
 int DCM1_Enc_Count = 0;
@@ -98,10 +100,14 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   Receive_Data();
-  if (Check_Com(Receive_Com)) {
-    Process_Sensor_Com();
-  } else {
-    // Call to function to process data for sensor command goes here
+  Com_Type();
+  if(DCM1_Target)
+  {
+    //SEND CODE TO ACTUATION
+  }
+  if(DCM2_Target)
+  {
+    //SEND CODE TO ACTUATION 
   }
 }
 
@@ -155,9 +161,22 @@ void DCM2_Enc_Update() {
   }
 }
 
-int Pulse_Target() {
-  DCM1_Target = int(round(Drive_Val/Dist_Per_Pulse));
+void Drive_Pulse_Target() {
+  DCM1_Target = -int(round(Drive_Val/Dist_Per_Pulse));
   DCM2_Target = DCM1_Target;
+}
+
+void Rot_Pulse_Target() {
+  if(Rotate_Val >= 0)
+  {
+    DCM1_Target = int(round((Rotate_Val*M_PI/180)*Wheel_Dist/2));
+    DCM2_Target = -DCM1_Target;
+  }
+  else
+  {
+    DCM2_Target = int(round((Rotate_Val*M_PI/180)*Wheel_Dist/2));
+    DCM1_Target = -DCM2_Target;
+  }
 }
 
 void Receive_Data() {
@@ -197,24 +216,42 @@ void Receive_Data() {
   }
 }
 
-void Process_Drive_Com(Receive_Com) {
+void Com_Type() {
+  if(Receive_Com[0] == 'u' || Receive_Com[0] == 'm')
+  {
+    Process_Sensor_Com();
+  }
+  else if(Receive_Com[0] == 'w' || Receive_Com[0] == 'r')
+  {
+    Process_Drive_Com();
+  }
+  else if(Receive_Com[0] == 'x')
+  {
+    Full_Stop_Com();
+  }
+}
+
+void Full_Stop_Com() {
+  DCM1_Target = 0;
+  DCM2_Target = 0;
+  DCM1_in_progress = true;
+  DCM2_in_progress = true;
+}
+
+void Process_Drive_Com() {
   char Drive_Com[];
   for(int i=0; i<strlen(Receive_Com)-3, i++)
   {
     Drive_Com[i] = Receive_Com[i+3];
   }
+  if(Receive_Com[0] == 'w')
   Drive_Val = atof(Drive_Com);
-}
-
-bool Check_Com() {
-  //Check and return true if drive command, false if sensor command
-  if(Receive_Com[0] == 'u')
   {
-    return false;
+    Drive_Pulse_Target();
   }
   else
   {
-    return true;
+    Rot_Pulse_Target();
   }
 }
 
