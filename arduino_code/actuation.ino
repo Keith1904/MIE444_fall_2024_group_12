@@ -1,16 +1,17 @@
 #include <Servo.h>
+#include <SoftwareSerial.h>
 
 // Sensor Arduino Serial Communication Pins
 int Ard_RX_Pin = 0;
 int Ard_TX_Pin = 1;
 
 // DC Motor Driver Control Pins
-int DCM2_ENB_Pin = 2;
-int DCM2_IN4_Pin = 3;
-int DCM2_IN3_Pin = 5;
-int DCM1_IN2_Pin = 6;
-int DCM1_IN1_Pin = 8;
-int DCM1_ENA_Pin = 9;
+int DCM1_ENB_Pin = 2;
+int DCM1_IN4_Pin = 3;
+int DCM1_IN3_Pin = 5;
+int DCM2_IN2_Pin = 6;
+int DCM2_IN1_Pin = 8;
+int DCM2_ENA_Pin = 9;
 
 // Servo Motor Control Pin
 Servo servo;
@@ -24,31 +25,32 @@ int LCD_SCL_Pin = A5;
 int DCM1_Speed = 0;
 int DCM2_Speed = 0;
 
+//Software Serial
+SoftwareSerial ArdSerial(Ard_RX_Pin, Ard_TX_Pin);
+
 void setup() {
   // put your setup code here, to run once:
 
 // Define output and input pins
 
-  pinMode(DCM1_ENB_PIN, OUTPUT);
-  pinMode(DCM1_IN4_PIN, OUTPUT);
-  pinMode(DCM1_IN3_PIN, OUTPUT);
-  pinMode(DCM2_IN2_PIN, OUTPUT);
-  pinMode(DCM2_IN1_PIN, OUTPUT);
-  pinMode(DCM2_ENA_PIN, OUTPUT);
+  pinMode(DCM1_ENB_Pin, OUTPUT);
+  pinMode(DCM1_IN4_Pin, OUTPUT);
+  pinMode(DCM1_IN3_Pin, OUTPUT);
+  pinMode(DCM2_IN2_Pin, OUTPUT);
+  pinMode(DCM2_IN1_Pin, OUTPUT);
+  pinMode(DCM2_ENA_Pin, OUTPUT);
   
-  servo.Attach(Servo_Control_Pin);
+  servo.attach(Servo_Control_Pin);
   
   pinMode(LCD_SDA_Pin, OUTPUT);
   pinMode(LCD_SCL_Pin, OUTPUT);
-  SoftwareSerial ArdSerial(Ard_RX_Pin, Ard_TX_Pin);
   ArdSerial.begin(9600); //Start serial communication with sensor arduino
 
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  Receive_Data();
-  Process_Com();
+  Process_Com(Receive_Data());
 }
 
 char* Receive_Data() {
@@ -68,7 +70,7 @@ char* Receive_Data() {
     {
       if(data != Com_End)
       {
-        Recieve_Com[count] = data;
+        Receive_Com[count] = data;
         count++; 
         if(count >= Num_Char)
         {
@@ -91,9 +93,9 @@ char* Receive_Data() {
   }
 }
 
-void Process_Com(Com){
+void Process_Com(char* Com) {
   // Pointer to keep track of the current position in the string
-  char* segment = strtok(command, ",");
+  char* segment = strtok(Com, ",");
 
   // Loop through each segment, which should look like "M1:50" or "M2:-50"
   while (segment != NULL) {
@@ -101,7 +103,7 @@ void Process_Com(Com){
     int motorNumber, value;
     if (sscanf(segment, "M%d:%d", &motorNumber, &value) == 2) {
       // Call the DCM function with the extracted motor number and value
-      DCM(motorNumber, value);
+      DCM_On(motorNumber, value);
     }
 
     // Get the next segment
@@ -109,7 +111,7 @@ void Process_Com(Com){
   } 
 }
 
-void DCM_On(DCM, SPEED) {
+void DCM_On(int DCM, int SPEED) {
   //motor 1 on
   if(DCM == 1)
   {
