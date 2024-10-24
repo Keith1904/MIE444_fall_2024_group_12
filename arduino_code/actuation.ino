@@ -92,7 +92,21 @@ char* Receive_Data() {
 }
 
 void Process_Com(Com){
-  
+  // Pointer to keep track of the current position in the string
+  char* segment = strtok(command, ",");
+
+  // Loop through each segment, which should look like "M1:50" or "M2:-50"
+  while (segment != NULL) {
+    // Extract the motor number and its value using sscanf
+    int motorNumber, value;
+    if (sscanf(segment, "M%d:%d", &motorNumber, &value) == 2) {
+      // Call the DCM function with the extracted motor number and value
+      DCM(motorNumber, value);
+    }
+
+    // Get the next segment
+    segment = strtok(NULL, ",");
+  } 
 }
 
 void DCM_On(DCM, SPEED) {
