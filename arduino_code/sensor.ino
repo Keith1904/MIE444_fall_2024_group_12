@@ -64,6 +64,8 @@ int U1_Length;
 int U2_Length;
 int U3_Length;
 
+SoftwareSerial ArdSerial(Ard_RX_Pin, Ard_TX_Pin); //PINS ON SENSOR THAT SEND TO ACTUATION
+
 void setup() {
   // put your setup code here, to run once:
 
@@ -93,7 +95,6 @@ void setup() {
   pinMode(TofF_OutA_Pin, INPUT);
   pinMode(TofF_OutB_Pin, INPUT);
 
-  SoftwareSerial ArdSerial(Ard_RX_Pin, Ard_TX_Pin); //PINS ON SENSOR THAT SEND TO ACTUATION
   ArdSerial.begin(9600); //Start serial communication with actuation arduino
   Serial.begin(9600); //Start serial communication with bluetooth module
 }
@@ -126,7 +127,7 @@ void DCM1_Enc_Update() {
   }
   if (DCM1_in_progress && DCM1_Target == 0) {
     ArdSerial.write("[M1:0]"); // *** Needs to be updated when commands are finalized
-    DCM1_in_progress = false
+    DCM1_in_progress = false;
   }
 }
 
@@ -188,7 +189,7 @@ void Receive_Data() {
     {
       if(data != Com_End)
       {
-        Recieve_Com[count] = data;
+        Receive_Com[count] = data;
         count++; 
         if(count >= Num_Char)
         {
@@ -213,7 +214,7 @@ void Receive_Data() {
 void Send_Com() {
   while(!ArdSerial.available()) //while unavailable, wait until available to send data to ACTUATION
   {
-    time.sleep(0.1);
+    delay(10);
   }
   ArdSerial.write("[M1:50,M2:50]");
 }
@@ -242,19 +243,20 @@ void Full_Stop_Com() {
 }
 
 void Process_Drive_Com() {
-  char Drive_Com[];
-  for(int i=0; i<strlen(Receive_Com)-3, i++)
+  char Drive_Com[strlen(Receive_Com)-3];
+  for(int i=0; i<strlen(Receive_Com)-3; i++)
   {
     Drive_Com[i] = Receive_Com[i+3];
   }
   if(Receive_Com[0] == 'w')
-  Drive_Val = atof(Drive_Com);
   {
+    Drive_Val = atof(Drive_Com);
     Drive_Pulse_Target();
     Send_Com();
   }
   else
   {
+    Rotate_Val = atof(Drive_Com);
     Rot_Pulse_Target();
     Send_Com();
   }
@@ -269,19 +271,19 @@ void Process_Sensor_Com() {
         float output;
 
         if (tokenStr == "u0") {
-            output = U0_check();
+            output = U0_Check();
         } else if (tokenStr == "u1") {
-            output = U1_check();
+            output = U1_Check();
         } else if (tokenStr == "u2") {
-            output = U2_check();
+            output = U2_Check();
         } else if (tokenStr == "u3") {
-            output = U3_check();
+            output = U3_Check();
         }
-        else if (tokenStr == "m0") {
-            output = M2_check();
+          else if (tokenStr == "m0") {
+            output = M2_Check();
         }
-        else if (tokenStr == "m1") {
-            output = M1_check();
+          else if (tokenStr == "m1") {
+            output = M1_Check();
         }
 
         // Append to result in proper format
@@ -370,9 +372,9 @@ float U3_Check() {
 }
 
 float M1_Check() {
-  return DCM1_Enc_Count
+  return DCM1_Enc_Count;
 }
 
-float M2_check() {
-  return DCM2_Enc_Count
+float M2_Check() {
+  return DCM2_Enc_Count;
 }
