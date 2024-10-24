@@ -65,6 +65,7 @@ class General:
 
     def wall_alignment(self):
         print("Aligning with wall...")
+        time.sleep(2)
         step_size = 2  # Small rotation step (adjust as needed)
         closest_sensor_id, previous_reading = self.recon.find_closest_sensor(self.robot)
         aligned = False

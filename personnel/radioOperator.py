@@ -45,7 +45,9 @@ class RadioOperator:
         self.line_busy = True
         packet_tx = self.packetize(data)
         self.transmit(packet_tx)
+        response =  self.receive()
         self.line_busy = False
+        return response
  
     # Wrapper functions
     def transmit(self, data):
