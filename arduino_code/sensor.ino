@@ -7,8 +7,8 @@ int BT_RX_Pin = 0;
 int BT_TX_Pin = 1;
 
 // DC Motor Encoder Outputs
-int DCM1_EncA_Pin = 2;
-int DCM2_EncA_Pin = 3;
+int DCM1_EncA_Pin = 3;
+int DCM2_EncA_Pin = 2;
 int DCM1_EncB_Pin = 4;
 int DCM2_EncB_Pin = 5;
 
@@ -41,9 +41,10 @@ float Wheel_Dia = 2.55906; //Wheel diameter in inches
 int Enc_Res = 11; //Encoder pulses per full revolution
 int Gear_Ratio = 34; //DC motor gear ratio
 float Dist_Per_Pulse = 0.0197; //Distance travelled per encoder pulse in inches
-float Wheel_Dist = 7.25; //wheel to wheel distance in inchess
+float Wheel_Dist = 7.25; //wheel to wheel distance in inches
+//int Motor_Speed = 50; //motor speed
 
-//Array to store US/DRIVE command
+// Array to store US/DRIVE command
 const byte Num_Char = 32; //Size of byte array
 char Receive_Com[Num_Char]; //Character array to store commands WITHOUT BRACKETS
 float Drive_Val; //Store extracted drive command numerical value
@@ -92,7 +93,7 @@ void setup() {
   pinMode(TofF_OutA_Pin, INPUT);
   pinMode(TofF_OutB_Pin, INPUT);
 
-  SoftwareSerial ArdSerial(Ard_RX_Pin, Ard_TX_Pin);
+  SoftwareSerial ArdSerial(Ard_RX_Pin, Ard_TX_Pin); //PINS ON SENSOR THAT SEND TO ACTUATION
   ArdSerial.begin(9600); //Start serial communication with actuation arduino
   Serial.begin(9600); //Start serial communication with bluetooth module
 }
@@ -101,14 +102,7 @@ void loop() {
   // put your main code here, to run repeatedly:
   Receive_Data();
   Com_Type();
-  if(DCM1_Target)
-  {
-    //SEND CODE TO ACTUATION
-  }
-  if(DCM2_Target)
-  {
-    //SEND CODE TO ACTUATION 
-  }
+  Send_Com();
 }
 
 void DCM1_Enc_Update() {
@@ -131,7 +125,7 @@ void DCM1_Enc_Update() {
     }
   }
   if (DCM1_in_progress && DCM1_Target == 0) {
-    Transmit_mot_command(stop motor 1) // *** Needs to be updated when commands are finalized
+    ArdSerial.write("[M1:0]"); // *** Needs to be updated when commands are finalized
     DCM1_in_progress = false
   }
 }
@@ -156,8 +150,8 @@ void DCM2_Enc_Update() {
     }
   }
   if (DCM2_in_progress && DCM2_Target == 0) {
-    Transmit_mot_command(stop motor 2) // *** Needs to be updated when commands are finalized
-    DCM2_in_progress = false
+    ArdSerial.write("[M2:0]"); // *** Needs to be updated when commands are finalized
+    DCM2_in_progress = false;
   }
 }
 
@@ -216,6 +210,14 @@ void Receive_Data() {
   }
 }
 
+void Send_Com() {
+  while(!ArdSerial.available()) //while unavailable, wait until available to send data to ACTUATION
+  {
+    time.sleep(0.1);
+  }
+  ArdSerial.write("[M1:50,M2:50]");
+}
+
 void Com_Type() {
   if(Receive_Com[0] == 'u' || Receive_Com[0] == 'm')
   {
@@ -232,10 +234,11 @@ void Com_Type() {
 }
 
 void Full_Stop_Com() {
+  ArdSerial.write("[M1:0,M2:0]");
   DCM1_Target = 0;
   DCM2_Target = 0;
-  DCM1_in_progress = true;
-  DCM2_in_progress = true;
+  DCM1_in_progress = false;
+  DCM2_in_progress = false;
 }
 
 void Process_Drive_Com() {
@@ -248,10 +251,12 @@ void Process_Drive_Com() {
   Drive_Val = atof(Drive_Com);
   {
     Drive_Pulse_Target();
+    Send_Com();
   }
   else
   {
     Rot_Pulse_Target();
+    Send_Com();
   }
 }
 
