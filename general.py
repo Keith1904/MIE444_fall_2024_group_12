@@ -179,6 +179,16 @@ class Robot:
 
 if __name__ == "__main__":
     general = General()
-    general.radioOperator.broadcast("u0")
+    print(general.radioOperator.broadcast("u0"))
+    time.sleep(1)
+    print(general.radioOperator.broadcast("u1"))
+    time.sleep(1)
+    print(general.radioOperator.broadcast("u2"))
+    time.sleep(1)
+    print(general.radioOperator.broadcast("u3"))
+    time.sleep(1)
+    general.radioOperator.broadcast("w0:5")
+    time.sleep(10)
+    general.radioOperator.broadcast("r0:30")
     #general.wall_alignment()
     #general.execute_mission()
