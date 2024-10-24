@@ -33,10 +33,10 @@ class General:
         self.motorSergeant = MotorSergeant(self.radioOperator)
         self.recon = Recon()
         self.mode = "auto"
-        self.sensor_thread = threading.Thread(target=self.recon.check_sensors, args = (self.robot, ['u0', 'u1', 'u2', 'u3', 'm0', 'm1'], self.radioOperator), daemon=True)
-        self.manual_control_thread = threading.Thread(target=self.manual_control, daemon=True)
-        self.sensor_thread.start()
-        self.manual_control_thread.start()
+        #self.sensor_thread = threading.Thread(target=self.recon.check_sensors, args = (self.robot, ['u0', 'u1', 'u2', 'u3', 'm0', 'm1'], self.radioOperator), daemon=True)
+        #self.manual_control_thread = threading.Thread(target=self.manual_control, daemon=True)
+        #self.sensor_thread.start()
+        #self.manual_control_thread.start()
         self.last_input = ''
         
         
@@ -179,5 +179,6 @@ class Robot:
 
 if __name__ == "__main__":
     general = General()
-    general.wall_alignment()
-    general.execute_mission()
+    general.radioOperator.broadcast("u0")
+    #general.wall_alignment()
+    #general.execute_mission()
