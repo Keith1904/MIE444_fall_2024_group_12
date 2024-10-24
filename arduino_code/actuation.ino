@@ -36,10 +36,57 @@ void setup() {
   
   pinMode(LCD_SDA_Pin, OUTPUT);
   pinMode(LCD_SCL_Pin, OUTPUT);
+  SoftwareSerial ArdSerial(Ard_RX_Pin, Ard_TX_Pin);
+  ArdSerial.begin(9600); //Start serial communication with sensor arduino
 
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
+  Receive_Data();
+  Process_Com();
+}
 
+char* Receive_Data() {
+  char data;
+  static byte count = 0;
+  static bool Receive_Inpr = false;
+  static bool New_Data = false;
+  char Com_Start = '['; // Command start character marker
+  char Com_End = ']';   // Command end character marker
+  const byte Num_Char = 32; //Size of byte array
+  static char Receive_Com[Num_Char]; //Character array to store commands WITHOUT BRACKETS
+
+  while(ArdSerial.available() > 0 && New_Data == false)
+  {
+    data = ArdSerial.read();
+    if(Receive_Inpr == true)
+    {
+      if(data != Com_End)
+      {
+        Recieve_Com[count] = data;
+        count++; 
+        if(count >= Num_Char)
+        {
+          count = Num_Char - 1;
+        }
+      }
+      else
+      {
+        Receive_Com[count] = '\0';
+        Receive_Inpr = false;
+        count = 0;
+        New_Data = true;
+        return Receive_Com
+      }
+    }
+    else if(data == Com_Start)
+    {
+      Receive_Inpr = true;
+    }
+  }
+}
+
+void Process_Com(Com){
+  
 }

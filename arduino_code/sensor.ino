@@ -288,8 +288,8 @@ void Process_Sensor_Com() {
     // Remove the last comma and close the bracket
     result.remove(result.length() - 1);
     result += "]";
-    Receive_Com[0] = "\0"
-    Serial.print(result)
+    Receive_Com[0] = "\0";
+    Serial.print(result);
 }
 
 float U0_Check() {
@@ -304,7 +304,7 @@ float U0_Check() {
 
   pingTime = pulseIn(U0_Echo_Pin, HIGH);  // reads echo pin
 
-  U0_Length = pingTime * V_Sound * 0.5  // U0 length in inches
+  U0_Length = pingTime * V_Sound * 0.5;  // U0 length in inches
 
   return U0_Length;
 
@@ -322,7 +322,7 @@ float U1_Check() {
 
   pingTime = pulseIn(U1_Echo_Pin, HIGH);  // reads echo pin
 
-  U1_Length = pingTime * V_Sound * 0.5  // U1 length in inches
+  U1_Length = pingTime * V_Sound * 0.5;  // U1 length in inches
 
   return U1_Length;
 
@@ -340,7 +340,7 @@ float U2_Check() {
 
   pingTime = pulseIn(U2_Echo_Pin, HIGH);  // reads echo pin
 
-  U2_Length = pingTime * V_Sound * 0.5  // U2 length in inches
+  U2_Length = pingTime * V_Sound * 0.5;  // U2 length in inches
 
   return U2_Length;
 
@@ -358,7 +358,7 @@ float U3_Check() {
 
   pingTime = pulseIn(U3_Echo_Pin, HIGH);  // reads echo pin
 
-  U3_Length = pingTime * V_Sound * 0.5  // U3 length in inches
+  U3_Length = pingTime * V_Sound * 0.5;  // U3 length in inches
 
   return U3_Length;
 
