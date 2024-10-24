@@ -1,4 +1,5 @@
 import time
+import math
 import threading
 import keyboard
 from personnel.motorSergeant import MotorSergeant
@@ -44,16 +45,19 @@ class General:
         while True:
             if self.mode == 'auto':
                 if self.motorSergeant.reset:
-                    self.wall_alignment()
+                    print("resetting")
+                    #self.wall_alignment()
                     distance, direction = self.pathfinder.find_furthest_distance(self.robot)
                     self.motorSergeant.rotate(direction)
-                    time.sleep(0.1)
+                    time.sleep(0.5)
                     while self.motorSergeant.movement_in_progress(self.robot):
                         time.sleep(0.3)
+                    print("sending it")
                     self.motorSergeant.drive(distance - 1)
                     self.motorSergeant.reset = False
+                    self.motorSergeant.reset_cooldown = self.robot.motor_encoders["m0"]["reading"]
                     time.sleep(0.5)
-                if self.motorSergeant.movement_in_progress(self.robot):
+                elif self.motorSergeant.movement_in_progress(self.robot):
                     self.motorSergeant.check_for_collision(self.robot)
                     time.sleep(0.1)
                 else:
@@ -65,43 +69,51 @@ class General:
 
     def wall_alignment(self):
         print("Aligning with wall...")
-        time.sleep(2)
-        step_size = 2  # Small rotation step (adjust as needed)
-        closest_sensor_id, previous_reading = self.recon.find_closest_sensor(self.robot)
-        aligned = False
-        self.motorSergeant.rotate(5)
-        
-        if self.robot.distance_sensors[closest_sensor_id]["reading"] < previous_reading:
+        time.sleep(1)
+        step_distance = 1  # Move forward by 1 inch (adjust as needed)
+        # Get initial readings from left and right sensors (u1 and u3)
+        initial_left = self.robot.distance_sensors['u1']["reading"]
+        initial_right = self.robot.distance_sensors['u3']["reading"]
+        if self.robot.distance_sensors['u0']["reading"] > self.robot.distance_sensors['u2']["reading"]:
+            # Move forward a short distance
             direction = 1
+            self.motorSergeant.drive(direction * step_distance)
+            time.sleep(4)  # Small delay for the robot to stabilize after moving
         else:
             direction = -1
+            self.motorSergeant.drive(direction * step_distance)
+            time.sleep(4)  # Small delay for the robot to stabilize after moving
+            
         
-        previous_readings = {sensor_id: float('inf') for sensor_id in ['u0', 'u1', 'u2', 'u3']}
-        while not aligned:
-            self.motorSergeant.rotate(step_size * direction)
-            time.sleep(0.1)  # Small delay to stabilize sensor reading
-            
-            # Get readings for all sensors
-            sensor_ids = ['u0', 'u1', 'u2', 'u3']
-            time.sleep(0.1)
-            # Record the current readings
-            current_readings = {sensor_id: self.robot.distance_sensors[sensor_id]["reading"] for sensor_id in sensor_ids}
-            
-            # Check if each sensor is at or below its previous minimum
-            num_sensors_at_min = 0
-            for sensor_id in sensor_ids:
-                if current_readings[sensor_id] >= previous_readings[sensor_id]:
-                    num_sensors_at_min += 1
-                
-            previous_readings = current_readings
-            # If at least 3 sensors are at their minimum, consider it aligned
-            if num_sensors_at_min >= 3:
-                aligned = True
+        # Get new readings from left and right sensors (u1 and u3)
+        new_left = self.robot.distance_sensors['u1']["reading"]
+        new_right = self.robot.distance_sensors['u3']["reading"]
+        
+        # Calculate the differences in distances
+        left_diff = new_left - initial_left
+        right_diff = new_right - initial_right
+        print(new_left)
+        print(initial_left)
+        # Calculate the deviation angle using arctan
+        if abs(left_diff) < abs(right_diff) and abs(left_diff) < 1:
+            print(left_diff)
+            deviation_angle = math.degrees(math.atan(direction * (left_diff) / step_distance))
+        elif right_diff < 1:
+            deviation_angle = math.degrees(-math.atan(direction * (right_diff) / step_distance))
 
-        # Fine-tune by reversing half the step size if needed
-        self.motorSergeant.rotate(-step_size / 2 * direction)
-        time.sleep(0.1)  # Allow time for stabilization after reversing
-        print("Alignment done!")       
+        # Rotate the robot to correct the alignment
+        if abs(deviation_angle) > 5:  # Threshold to detect misalignment (adjust as needed)
+            print(f"Deviation detected: {deviation_angle:.2f} degrees")
+
+            if deviation_angle > 0:
+                print("Rotating clockwise to align...")
+                self.motorSergeant.rotate(deviation_angle)
+            else:
+                print("Rotating counterclockwise to align...")
+                self.motorSergeant.rotate(deviation_angle)
+            
+
+        print("Alignment done!") 
     
     def manual_control(self):
         while True:
@@ -167,5 +179,5 @@ class Robot:
 
 if __name__ == "__main__":
     general = General()
+    general.wall_alignment()
     general.execute_mission()
-    #general.wall_alignment()

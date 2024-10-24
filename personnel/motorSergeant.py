@@ -10,6 +10,7 @@ class MotorSergeant:
         self.reset_cooldown = 0
         
     def drive(self, distance):
+        print(f"received this: {distance}")
         self.stop()
         self.radioOperator.broadcast("w0:" + str(distance))
 
@@ -50,7 +51,7 @@ class MotorSergeant:
                     print(f"delta_sensor: {abs(delta_sensor)}")
                     print(f"delta_encoder: {delta_encoder}")
                     angle_deviation = np.arctan(delta_sensor / delta_encoder)
-                    self.rotate(-(angle_deviation + 2))
+                    self.rotate(-5)
                     time.sleep(0.2)
                     while self.movement_in_progress(robot):
                         time.sleep(0.1)
@@ -63,7 +64,7 @@ class MotorSergeant:
                     print(f"delta_sensor: {delta_sensor}")
                     print(f"delta_encoder: {delta_encoder}")
                     angle_deviation = np.arctan(delta_sensor / delta_encoder)
-                    self.rotate(angle_deviation + 2)
+                    self.rotate(5)
                     time.sleep(0.2)
                     while self.movement_in_progress(robot):
                         time.sleep(0.1)
@@ -71,28 +72,34 @@ class MotorSergeant:
                     time.sleep(0.5)
                     break
                 self.reset = True
+                break
             elif 2 < reading + sensor_distance - robot.radius < 5 and reading >= sensor_data["previous_reading"]:
                 if sensor_id == "u1":
-                    self.rotate(2)
+                    self.rotate(5)
                     time.sleep(0.2)
                     while self.movement_in_progress(robot):
                         time.sleep(0.1)
                     self.drive(robot.distance_sensors["u0"]["reading"] - 1)
                     time.sleep(0.2)
+                    break
                 elif sensor_id == "u3":
-                    self.rotate(-2)
+                    self.rotate(-5)
                     time.sleep(0.2)
                     while self.movement_in_progress(robot):
                         time.sleep(0.1)
                     self.drive(robot.distance_sensors["u0"]["reading"] - 1)
                     time.sleep(0.2)
-            elif reading > distance_sensors_copy["u0"]["reading"] + 8 and (sensor_id == "u1" or sensor_id == "u3") and motor_encoders_copy["m0"]["reading"] > self.reset_cooldown + 6:
+                    break
+            elif reading > distance_sensors_copy["u0"]["reading"] + 8 and (sensor_id == "u1" or sensor_id == "u3") and motor_encoders_copy["m0"]["reading"] > self.reset_cooldown + 8:
+                print(self.reset_cooldown)
+                print(motor_encoders_copy["m0"]["reading"])
                 self.stop()
                 time.sleep(0.1)
-                self.drive(3)
+                self.drive(2)
+                print("im here")
                 time.sleep(0.3)
                 while self.movement_in_progress(robot):
                     time.sleep(0.1)
                 self.reset = True
-                self.reset_cooldown = robot.motor_encoders["m0"]["reading"]
+      #          self.reset_cooldown = robot.motor_encoders["m0"]["reading"]
                 break
