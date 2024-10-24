@@ -5,12 +5,12 @@ int Ard_RX_Pin = 0;
 int Ard_TX_Pin = 1;
 
 // DC Motor Driver Control Pins
-int DCM_ENB_Pin = 2;
-int DCM_IN4_Pin = 3;
-int DCM_IN3_Pin = 5;
-int DCM_IN2_Pin = 6;
-int DCM_IN1_Pin = 8;
-int DCM_ENA_Pin = 9;
+int DCM2_ENB_Pin = 2;
+int DCM2_IN4_Pin = 3;
+int DCM2_IN3_Pin = 5;
+int DCM1_IN2_Pin = 6;
+int DCM1_IN1_Pin = 8;
+int DCM1_ENA_Pin = 9;
 
 // Servo Motor Control Pin
 Servo servo;
@@ -20,17 +20,21 @@ int Servo_Control_Pin = 11;
 int LCD_SDA_Pin = A4;
 int LCD_SCL_Pin = A5;
 
+// Motor Speed
+int DCM1_Speed = 0;
+int DCM2_Speed = 0;
+
 void setup() {
   // put your setup code here, to run once:
 
 // Define output and input pins
 
-  pinMode(DCM_ENB_PIN, OUTPUT);
-  pinMode(DCM_IN4_PIN, OUTPUT);
-  pinMode(DCM_IN3_PIN, OUTPUT);
-  pinMode(DCM_IN2_PIN, OUTPUT);
-  pinMode(DCM_IN1_PIN, OUTPUT);
-  pinMode(DCM_ENA_PIN, OUTPUT);
+  pinMode(DCM1_ENB_PIN, OUTPUT);
+  pinMode(DCM1_IN4_PIN, OUTPUT);
+  pinMode(DCM1_IN3_PIN, OUTPUT);
+  pinMode(DCM2_IN2_PIN, OUTPUT);
+  pinMode(DCM2_IN1_PIN, OUTPUT);
+  pinMode(DCM2_ENA_PIN, OUTPUT);
   
   servo.Attach(Servo_Control_Pin);
   
@@ -77,7 +81,7 @@ char* Receive_Data() {
         Receive_Inpr = false;
         count = 0;
         New_Data = true;
-        return Receive_Com
+        return Receive_Com;
       }
     }
     else if(data == Com_Start)
@@ -89,4 +93,39 @@ char* Receive_Data() {
 
 void Process_Com(Com){
   
+}
+
+void DCM_On(DCM, SPEED) {
+  //motor 1 on
+  if(DCM == 1)
+  {
+    if(SPEED >= 0)
+    {
+    digitalWrite(DCM1_IN3_Pin, HIGH);
+    digitalWrite(DCM1_IN4_Pin, LOW);
+    analogWrite(DCM1_ENB_Pin, SPEED);
+    }
+    if(SPEED < 0)
+    {
+      digitalWrite(DCM1_IN3_Pin, LOW);
+      digitalWrite(DCM1_IN4_Pin, HIGH);
+      analogWrite(DCM1_ENB_Pin, abs(SPEED));
+    }
+  }
+  //motor 2 on
+  if(DCM == 2)
+  {
+    if(SPEED >= 0)
+    {
+      digitalWrite(DCM2_IN1_Pin, HIGH);
+      digitalWrite(DCM2_IN2_Pin, LOW);
+      analogWrite(DCM2_ENA_Pin, SPEED);
+    }
+    if(SPEED < 0)
+    {
+      digitalWrite(DCM2_IN1_Pin, LOW);
+      digitalWrite(DCM2_IN2_Pin, HIGH);
+      analogWrite(DCM2_ENA_Pin, abs(SPEED));
+    }
+  }
 }
