@@ -95,7 +95,7 @@ class MotorSergeant:
                 print(motor_encoders_copy["m0"]["reading"])
                 self.stop()
                 time.sleep(0.1)
-                self.drive(2)
+                self.drive(min(3, distance_sensors_copy["u0"]["reading"] -2))
                 print("im here")
                 time.sleep(0.3)
                 while self.movement_in_progress(robot):

@@ -100,7 +100,8 @@ class General:
             deviation_angle = math.degrees(math.atan(direction * (left_diff) / step_distance))
         elif right_diff < 1:
             deviation_angle = math.degrees(-math.atan(direction * (right_diff) / step_distance))
-
+        else:
+            deviation_angle = 0
         # Rotate the robot to correct the alignment
         if abs(deviation_angle) > 5:  # Threshold to detect misalignment (adjust as needed)
             print(f"Deviation detected: {deviation_angle:.2f} degrees")
