@@ -73,7 +73,7 @@ class MotorSergeant:
                     break
                 self.reset = True
                 break
-            elif 2 < reading + sensor_distance - robot.radius < 5 and reading >= sensor_data["previous_reading"]:
+            elif 2 < reading + sensor_distance - robot.radius < 5 and reading >= sensor_data["previous_reading"] and reading - 3 < sensor_data["previous_reading"]:
                 if sensor_id == "u1":
                     self.rotate(5)
                     time.sleep(0.2)

@@ -2,7 +2,7 @@ import time
 class Recon:
     '''This class collects data from sensors and relays it to scout and pathfinder.'''
         
-    def check_sensors(self, robot, sensor_ids, radioOperator, window_size=5):
+    def check_sensors(self, robot, sensor_ids, radioOperator, window_size=1):
         while True:
             readings, time_rx = radioOperator.broadcast(",".join(sensor_ids))
             for reading in readings:
