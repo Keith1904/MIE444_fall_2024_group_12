@@ -15,8 +15,8 @@ class Scout:
         particles = []
         for i in range(self.num_particles):
             while True:
-                x = random.uniform(0, self.maze.maze_dim_x)
-                y = random.uniform(0, self.maze.maze_dim_y)
+                x = random.uniform(0, self.maze.size_x)
+                y = random.uniform(0, self.maze.size_y)
                 
                 if self.is_valid_position(x, y):
                     particles.append(Particle(x, y, 1 / self.num_particles))
@@ -31,8 +31,8 @@ class Scout:
         y_cell = int(y / 12)
         
         # Check that the position is within the maze boundaries.
-        if 0 <= x_cell < self.maze.maze_dim_x / 12 and 0 <= y_cell < self.maze.maze_dim_y / 12:
-            return self.maze.walls[y_cell][x_cell] == 1
+        if 0 <= x_cell < self.maze.size_x / 12 and 0 <= y_cell < self.maze.size_y / 12:
+            return self.maze.orig_walls[y_cell][x_cell] != 0
         return False
     
     def predict(self):

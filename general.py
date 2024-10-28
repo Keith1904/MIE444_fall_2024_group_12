@@ -1,19 +1,24 @@
 import time
 import math
 import threading
+import numpy as np
+import sys
+import shapely as shp
+import pygame
 import keyboard
 from personnel.motorSergeant import MotorSergeant
 from personnel.scout import Scout
 from personnel.pathfinder import Pathfinder
 from personnel.recon import Recon
 from personnel.radioOperator import RadioOperator
+from maze import Maze
 import settings as SETTINGS
 
 class General:
     '''Interfaces with all other classes and coordinates all operations.'''
     
     def __init__(self):
-        self.maze = Maze()
+        self.MAZE = Maze()
         self.robot = Robot(SETTINGS.distance_sensors, SETTINGS.motor_encoders, SETTINGS.ir_sensor)
         self.radioOperator = RadioOperator(
             HOST=SETTINGS.HOST,
@@ -29,13 +34,13 @@ class General:
             TRANSMIT_PAUSE=SETTINGS.TRANSMIT_PAUSE
             )
         self.pathfinder = Pathfinder()
-        #self.scout = Scout(self, self.maze, self.robot)
+        self.scout = Scout(10, self.MAZE)
         self.motorSergeant = MotorSergeant(self.radioOperator)
         self.recon = Recon()
         self.mode = "auto"
-        self.sensor_thread = threading.Thread(target=self.recon.check_sensors, args = (self.robot, ['u0', 'u1', 'u2', 'u3', 'm0', 'm1'], self.radioOperator), daemon=True)
+        self.sensors_and_localization_thread = threading.Thread(target=self.sensors_and_localization, args = (self.robot, ['u0', 'u1', 'u2', 'u3', 'm0', 'm1'], self.radioOperator), daemon=True)
         self.manual_control_thread = threading.Thread(target=self.manual_control, daemon=True)
-        self.sensor_thread.start()
+        self.sensors_and_localization_thread.start()
         self.manual_control_thread.start()
         self.last_input = ''
         
@@ -43,6 +48,7 @@ class General:
     def execute_mission(self):
         #self.scout.localize(self.robot)
         while True:
+            self.update_maze()
             if self.mode == 'auto':
                 if self.motorSergeant.reset:
                     print("resetting")
@@ -154,17 +160,47 @@ class General:
                 time.sleep(0.1)
 
             time.sleep(0.1)  # Prevent excessive CPU usage
+        
+    def sensors_and_localization(self, robot, sensor_ids, radioOperator):
+        while(True):
+            self.recon.check_sensors(robot, sensor_ids, radioOperator)
+            #self.scout.localize()
+            self.update_maze()
 
-            
-class Maze:
-    '''Defines static characteristics of the maze.'''
-    def __init__(self):
-        self.wall_segment_length = SETTINGS.wall_segment_length
-        self.floor_segment_length = SETTINGS.floor_segment_length
-        self.walls = SETTINGS.walls
-        self.floor_seed = SETTINGS.floor_seed
-        self.maze_dim_x = SETTINGS.maze_dim_x
-        self.maze_dim_y = SETTINGS.maze_dim_y
+    def initialize_maze(self):
+        self.MAZE.import_walls()
+        self.MAZE.generate_floor()
+        CANVAS_WIDTH = self.MAZE.size_x * SETTINGS.ppi + SETTINGS.border_pixels * 2
+        CANVAS_HEIGHT = self.MAZE.size_y * SETTINGS.ppi + SETTINGS.border_pixels * 2
+        pygame.init()
+        self.canvas = pygame.display.set_mode([CANVAS_WIDTH, CANVAS_HEIGHT])
+      
+    def update_maze(self):
+        game_events = pygame.event.get()
+        keypress = pygame.key.get_pressed()
+        self.canvas.fill(SETTINGS.background_color)
+
+        # Draw the maze checkerboard pattern
+        self.MAZE.draw_floor(self.canvas)
+
+        # Draw the maze walls
+        self.MAZE.draw_walls(self.canvas)
+        
+        # Draw the particles
+        particle_color = (255, 0, 0)  # Color for the particles (red in this case)
+        particle_radius = 10  # Radius of each particle's circle
+        
+        for particle in self.scout.particles:  # Assuming self.particles is a list of (x, y) tuples
+            particle_int_pos = (int(round(SETTINGS.border_pixels + particle.x * SETTINGS.ppi)), int(round( SETTINGS.border_pixels + particle.y * SETTINGS.ppi)))
+            #print(particle.x)
+            #print(particle.y)
+            #print(particle_int_pos)
+            pygame.draw.circle(self.canvas, particle_color, particle_int_pos, particle_radius)
+
+        # Flip the display (update the canvas)
+        pygame.display.flip()
+    
+        
         
 class Robot:
     def __init__(self, distance_sensors, motor_encoders, ir_sensor):
@@ -180,5 +216,6 @@ class Robot:
 
 if __name__ == "__main__":
     general = General()
-    general.wall_alignment()
+    np.random.seed(SETTINGS.floor_seed)
+    general.initialize_maze()
     general.execute_mission()
