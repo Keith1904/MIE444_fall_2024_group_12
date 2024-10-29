@@ -1,6 +1,9 @@
 import numpy as np
 import random
 import math
+import pygame
+import scipy.stats
+import utilities
 
 class Scout:
     '''This class performs the particle filter localization algorithm.'''
@@ -80,8 +83,86 @@ class Scout:
             
             # Update the particle's position
             particle.update_position(x=x_new, y=y_new, theta=theta_new)
-                 
+            
+    def update_weights(self, maze, robot, R):
+        """
+        Updates weights based on the similarity between simulated and actual sensor readings.
+        """
+        # Sensor IDs (u0: front, u1: right, u2: back, u3: left)
+        sensor_ids = ["u0", "u1", "u2", "u3"]
 
+        for sensor_id in sensor_ids:  # Iterate over each sensor (u0, u1, u2, u3)
+            # Retrieve the actual reading for the current sensor from the robot
+            actual_reading = robot.distance_sensors[sensor_id]["reading"]
+
+            for particle in self.particles:
+                # Simulate the reading for the current particle and sensor
+                simulated_distance = particle.simulate_ultrasonic_sensor(maze, robot, sensor_id)
+                
+                # Calculate the likelihood of the actual reading given the simulated distance
+                likelihood = scipy.stats.norm(simulated_distance, R).pdf(actual_reading)
+                
+                # Update the particle's weight
+                particle.weight *= likelihood
+
+        # Normalize the weights to sum to 1
+        total_weight = sum(particle.weight for particle in self.particles)
+        for particle in self.particles:
+            particle.weight = particle.weight / total_weight if total_weight != 0 else 0
+                 
+    def systematic_resample(self):
+        """
+        Perform systematic resampling based on the weights of the particles.
+        
+        Parameters:
+            particles (list): List of particle objects, each having an attribute 'weight'.
+
+        Returns:
+            indexes (ndarray): Array of indices for resampling particles.
+        """
+        N = len(self.particles)
+        weights = np.array([particle.weight for particle in self.particles])
+        
+        positions = (np.arange(N) + np.random.random()) / N
+        indexes = np.zeros(N, dtype=int)
+        cumulative_sum = np.cumsum(weights)
+
+        i, j = 0, 0
+        while i < N:
+            if positions[i] < cumulative_sum[j]:
+                indexes[i] = j
+                i += 1
+            else:
+                j += 1
+
+        return indexes
+
+    def resample_from_index(self, indexes):
+        """
+        Resample the particles using the provided indices and normalize weights.
+        
+        Parameters:
+            particles (list): List of particle objects with 'x', 'y', 'theta', and 'weight' attributes.
+            indexes (ndarray): Array of indices indicating which particles to keep.
+
+        Returns:
+            None: The particles list is modified in place.
+        """
+        # Create a copy of the current particles based on the indexes
+        new_particles = [self.particles[i] for i in indexes]
+
+        # Replace old particles with the resampled particles
+        for i, new_particle in enumerate(new_particles):
+            self.particles[i].x = new_particle.x
+            self.particles[i].y = new_particle.y
+            self.particles[i].theta = new_particle.theta  # Update the theta attribute as well
+            self.particles[i].weight = 1.0 / len(self.particles)  # Reset weight to be equal
+
+        # Normalize the weights to sum to 1
+        total_weight = sum(particle.weight for particle in self.particles)
+        for particle in self.particles:
+            particle.weight /= total_weight if total_weight != 0 else 1.0
+    
 class Particle:
     '''Defines the attributes of a particle including it's position and weight.'''
     
@@ -100,5 +181,19 @@ class Particle:
         self.y = y
         self.theta = theta
         
-    def simulate_ultrsonic_sensor(self):
+    def simulate_ultrasonic_sensor(self, maze, robot, sensor_id):
+        sensor_angle = self.theta - robot.distance_sensors[sensor_id]["rotation"]
+        length = pygame.math.Vector2(0,100)
+        beam_end = pygame.math.Vector2.rotate(length, sensor_angle) + [self.x, self.y]
+        beam = [[[self.x, self.y], beam_end]]
         
+        walls_to_check = maze.reduced_walls
+        squared_distance = 100^2
+        for wall in walls_to_check:
+            collision_points = utilities.collision(beam, wall)
+            if not collision_points:
+                pass
+            else:
+                beam[0][1], squared_distance = utilities.closest_fast([self.x, self.y], collision_points)
+        
+        return math.sqrt(squared_distance)
