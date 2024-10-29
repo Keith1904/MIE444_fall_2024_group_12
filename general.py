@@ -34,10 +34,10 @@ class General:
             TRANSMIT_PAUSE=SETTINGS.TRANSMIT_PAUSE
             )
         self.pathfinder = Pathfinder()
-        self.scout = Scout(10, self.MAZE)
+        self.scout = Scout(100, self.MAZE, self.robot)
         self.motorSergeant = MotorSergeant(self.radioOperator)
         self.recon = Recon()
-        self.mode = "auto"
+        self.mode = "manual"
         self.sensors_and_localization_thread = threading.Thread(target=self.sensors_and_localization, args = (self.robot, ['u0', 'u1', 'u2', 'u3', 'm0', 'm1'], self.radioOperator), daemon=True)
         self.manual_control_thread = threading.Thread(target=self.manual_control, daemon=True)
         self.sensors_and_localization_thread.start()
@@ -164,8 +164,7 @@ class General:
     def sensors_and_localization(self, robot, sensor_ids, radioOperator):
         while(True):
             self.recon.check_sensors(robot, sensor_ids, radioOperator)
-            #self.scout.localize()
-            self.update_maze()
+            self.scout.predict()
 
     def initialize_maze(self):
         self.MAZE.import_walls()
@@ -192,9 +191,6 @@ class General:
         
         for particle in self.scout.particles:  # Assuming self.particles is a list of (x, y) tuples
             particle_int_pos = (int(round(SETTINGS.border_pixels + particle.x * SETTINGS.ppi)), int(round( SETTINGS.border_pixels + particle.y * SETTINGS.ppi)))
-            #print(particle.x)
-            #print(particle.y)
-            #print(particle_int_pos)
             pygame.draw.circle(self.canvas, particle_color, particle_int_pos, particle_radius)
 
         # Flip the display (update the canvas)
@@ -211,6 +207,7 @@ class Robot:
         self.y = None
         self.direction = None
         self.radius = SETTINGS.radius
+        self.wheel_distance = SETTINGS.wheel_distance
 
 
 
