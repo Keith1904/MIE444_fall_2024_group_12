@@ -60,25 +60,29 @@ class Scout:
         delta_theta = (delta_m1 - delta_m0) / self.robot.wheel_distance
         if abs(delta_theta) < 1e-6:
             delta_theta = 0
-        
+
+        # Define the standard deviations for noise in distance and angle
+        distance_noise_std = 0.1  # Adjust based on your observations
+        angle_noise_std = 0.5     # Adjust based on your observations
+
         for particle in self.particles:
-            #print(particle.x)
-            #print(particle.y)
-            #print(particle.theta)
+            # Add Gaussian noise to the distance and angle
+            d_noisy = d + np.random.normal(0, distance_noise_std)
+            delta_theta_noisy = delta_theta + math.radians(np.random.normal(0, angle_noise_std))
+            
             # Update the bearing in degrees
-            theta_new = particle.theta + math.degrees(delta_theta)
+            theta_new = particle.theta + math.degrees(delta_theta_noisy)
             # Normalize theta to stay within 0 to 360 degrees
             theta_new = theta_new % 360
             
-            if delta_theta == 0:
+            if delta_theta_noisy == 0:
                 # Moving in a straight line
-                x_new = particle.x + d * math.cos(math.radians(particle.theta))
-                y_new = particle.y - d * math.sin(math.radians(particle.theta))  # Subtract to account for downward y-axis
+                x_new = particle.x + d_noisy * math.cos(math.radians(particle.theta))
+                y_new = particle.y - d_noisy * math.sin(math.radians(particle.theta))  # Subtract to account for downward y-axis
             else:
                 # Moving in an arc
-                R = d / delta_theta  # Convert delta_theta to radians for calculation
+                R = d_noisy / delta_theta_noisy  # Use noisy delta_theta for calculation
                 x_new = particle.x - R * math.sin(math.radians(particle.theta)) + R * math.sin(math.radians(theta_new))
-                y_new = particle.y + R * math.cos(math.radians(particle.theta)) - R * math.cos(math.radians(theta_new))
                 y_new = particle.y - (R * math.cos(math.radians(particle.theta)) - R * math.cos(math.radians(theta_new)))  # Account for downward y-axis
             
             # Update the particle's position
@@ -101,9 +105,9 @@ class Scout:
                 
                 # Calculate the likelihood of the actual reading given the simulated distance
                 likelihood = scipy.stats.norm(simulated_distance, R).pdf(actual_reading)
-                
                 # Update the particle's weight
                 particle.weight *= likelihood
+                particle.weight += 1e-300
 
         # Normalize the weights to sum to 1
         total_weight = sum(particle.weight for particle in self.particles)
@@ -122,7 +126,6 @@ class Scout:
         """
         N = len(self.particles)
         weights = np.array([particle.weight for particle in self.particles])
-        
         positions = (np.arange(N) + np.random.random()) / N
         indexes = np.zeros(N, dtype=int)
         cumulative_sum = np.cumsum(weights)
@@ -163,6 +166,11 @@ class Scout:
         for particle in self.particles:
             particle.weight /= total_weight if total_weight != 0 else 1.0
     
+    def neff(self):
+        weights = np.array([particle.weight for particle in self.particles])
+        #print(weights)
+        return 1. / np.sum(np.square(weights))
+    
 class Particle:
     '''Defines the attributes of a particle including it's position and weight.'''
     
@@ -183,10 +191,13 @@ class Particle:
         
     def simulate_ultrasonic_sensor(self, maze, robot, sensor_id):
         sensor_angle = self.theta - robot.distance_sensors[sensor_id]["rotation"]
-        length = pygame.math.Vector2(0,100)
-        beam_end = pygame.math.Vector2.rotate(length, sensor_angle) + [self.x, self.y]
-        beam = [[[self.x, self.y], beam_end]]
+        length = pygame.math.Vector2(100,0)
+        sensor_x = self.x + robot.distance_sensors[sensor_id]["y"] * math.cos(math.radians(self.theta)) + robot.distance_sensors[sensor_id]["x"] * math.sin(math.radians(self.theta)) 
+        sensor_y = self.y + robot.distance_sensors[sensor_id]["x"] * math.cos(math.radians(self.theta)) - robot.distance_sensors[sensor_id]["y"] * math.sin(math.radians(self.theta))
+        beam_end = pygame.math.Vector2.rotate(length, -sensor_angle) + [sensor_x, sensor_y]
+        beam = [pygame.math.Vector2(sensor_x, sensor_y), beam_end]
         
+        #print(f"beam before: {beam}")
         walls_to_check = maze.reduced_walls
         squared_distance = 100^2
         for wall in walls_to_check:
@@ -194,6 +205,5 @@ class Particle:
             if not collision_points:
                 pass
             else:
-                beam[0][1], squared_distance = utilities.closest_fast([self.x, self.y], collision_points)
-        
+                beam[1], squared_distance = utilities.closest_fast([sensor_x, sensor_y], collision_points)
         return math.sqrt(squared_distance)
