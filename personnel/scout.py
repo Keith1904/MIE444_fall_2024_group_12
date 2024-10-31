@@ -88,88 +88,112 @@ class Scout:
             # Update the particle's position
             particle.update_position(x=x_new, y=y_new, theta=theta_new)
             
-    def update_weights(self, maze, robot, R):
+    def update_weights(self, maze, robot, sigma=0.05, epsilon=1e-6):
         """
-        Updates weights based on the similarity between simulated and actual sensor readings.
+        Update the weight of each particle based on the actual sensor readings.
+
+        :param particles: List of particle objects, each with attributes (x, y, theta, weight).
+        :param actual_readings: Dictionary of actual sensor readings keyed by sensor ID (e.g., 'u0', 'u1', etc.).
+        :param sigma: Standard deviation of sensor noise.
+        :param epsilon: A small value to prevent division by zero during normalization.
         """
-        # Sensor IDs (u0: front, u1: right, u2: back, u3: left)
+        total_weight = 0.0
+
         sensor_ids = ["u0", "u1", "u2", "u3"]
+        for particle in self.particles:
+            # Initialize the weight of this particle
+            particle.weight = 1.0
 
-        for sensor_id in sensor_ids:  # Iterate over each sensor (u0, u1, u2, u3)
-            # Retrieve the actual reading for the current sensor from the robot
-            actual_reading = robot.distance_sensors[sensor_id]["reading"]
-
-            for particle in self.particles:
-                # Simulate the reading for the current particle and sensor
-                simulated_distance = particle.simulate_ultrasonic_sensor(maze, robot, sensor_id)
+            # Loop over each sensor to compare readings
+            for sensor_id in sensor_ids:
+                # Simulate the sensor reading for this particle
+                simulated_reading = particle.simulate_ultrasonic_sensor(maze, robot, sensor_id)
                 
-                # Calculate the likelihood of the actual reading given the simulated distance
-                likelihood = scipy.stats.norm(simulated_distance, R).pdf(actual_reading)
+                # Get the actual reading for this sensor
+                actual_reading = robot.distance_sensors[sensor_id]["reading"]
+                
+                # Adjust sigma based on the reading (e.g., linearly proportional to distance)
+                adaptive_sigma = sigma * actual_reading  # or try sqrt(actual_reading)
+                
+                # Compute the likelihood using a Gaussian function with adaptive_sigma
+                weight = self.gaussian(actual_reading, adaptive_sigma, simulated_reading)
+                
                 # Update the particle's weight
-                particle.weight *= likelihood
-                particle.weight += 1e-300
+                particle.weight *= weight
 
-        # Normalize the weights to sum to 1
-        total_weight = sum(particle.weight for particle in self.particles)
-        for particle in self.particles:
-            particle.weight = particle.weight / total_weight if total_weight != 0 else 0
+            # Accumulate total weight for normalization later
+            total_weight += particle.weight
+
+        # Check if total_weight is zero and normalize
+        if total_weight < epsilon:
+            print("Warning: Total weight is too close to zero, skipping normalization.")
+            # Optionally reinitialize particles if total weight is zero to avoid collapse
+            for particle in self.particles:
+                particle.weight = 1.0 / len(self.particles)
+        else:
+            # Normalize weights
+            for particle in self.particles:
+                particle.weight /= total_weight
+
+    def gaussian(self, mean, sigma, x):
+        """
+        Gaussian probability density function.
+        
+        :param mean: Mean of the Gaussian distribution (actual sensor reading).
+        :param sigma: Standard deviation of the Gaussian (sensor noise).
+        :param x: Simulated sensor reading for the particle.
+        :return: Probability of the observed value given the mean and sigma.
+        """
+        return (1.0 / (sigma * math.sqrt(2.0 * math.pi))) * math.exp(-0.5 * ((x - mean) / sigma) ** 2)
                  
-    def systematic_resample(self):
+    def resample(self):
         """
-        Perform systematic resampling based on the weights of the particles.
-        
-        Parameters:
-            particles (list): List of particle objects, each having an attribute 'weight'.
+        Resample particles with replacement based on their weights.
 
-        Returns:
-            indexes (ndarray): Array of indices for resampling particles.
+        :return: New list of resampled particles.
         """
+        new_particles = []
         N = len(self.particles)
-        weights = np.array([particle.weight for particle in self.particles])
-        positions = (np.arange(N) + np.random.random()) / N
-        indexes = np.zeros(N, dtype=int)
-        cumulative_sum = np.cumsum(weights)
 
-        i, j = 0, 0
-        while i < N:
-            if positions[i] < cumulative_sum[j]:
-                indexes[i] = j
-                i += 1
-            else:
-                j += 1
+        # Create an array of cumulative weights
+        cumulative_weights = [0.0] * N
+        cumulative_weights[0] = self.particles[0].weight
+        for i in range(1, N):
+            cumulative_weights[i] = cumulative_weights[i-1] + self.particles[i].weight
 
-        return indexes
-
-    def resample_from_index(self, indexes):
-        """
-        Resample the particles using the provided indices and normalize weights.
+        # Generate a random starting point
+        r = random.uniform(0, 1 / N)
         
-        Parameters:
-            particles (list): List of particle objects with 'x', 'y', 'theta', and 'weight' attributes.
-            indexes (ndarray): Array of indices indicating which particles to keep.
+        # Perform systematic resampling
+        index = 0
+        for i in range(N):
+            threshold = r + i / N
+            while threshold > cumulative_weights[index]:
+                index += 1
+            # Create a copy of the selected particle and reset its weight
+            selected_particle = self.copy_particle(self.particles[index])
+            selected_particle.weight = 1.0 / N
+            new_particles.append(selected_particle)
 
-        Returns:
-            None: The particles list is modified in place.
+        self.particles = new_particles  # Replace old particles with new resampled ones
+
+    def copy_particle(self, particle):
         """
-        # Create a copy of the current particles based on the indexes
-        new_particles = [self.particles[i] for i in indexes]
+        Create a deep copy of a particle.
+        Adjust this function based on the actual attributes of your particle.
+        """
+        return Particle(particle.x, particle.y, particle.theta, particle.weight)  # Modify as per your Particle class
 
-        # Replace old particles with the resampled particles
-        for i, new_particle in enumerate(new_particles):
-            self.particles[i].x = new_particle.x
-            self.particles[i].y = new_particle.y
-            self.particles[i].theta = new_particle.theta  # Update the theta attribute as well
-            self.particles[i].weight = 1.0 / len(self.particles)  # Reset weight to be equal
+    def compute_neff(self):
+        """
+        Calculate the effective sample size (Neff) of the particles based on their weights.
 
-        # Normalize the weights to sum to 1
-        total_weight = sum(particle.weight for particle in self.particles)
-        for particle in self.particles:
-            particle.weight /= total_weight if total_weight != 0 else 1.0
-    
-    def neff(self):
-        weights = np.array([particle.weight for particle in self.particles])
-        #print(weights)
-        return 1. / np.sum(np.square(weights))
+        :return: The effective sample size (Neff).
+        """
+        sum_of_squares = sum(particle.weight ** 2 for particle in self.particles)
+        if sum_of_squares == 0:  # Avoid division by zero
+            return 0
+        return 1.0 / sum_of_squares
     
 class Particle:
     '''Defines the attributes of a particle including it's position and weight.'''

@@ -34,7 +34,7 @@ class General:
             TRANSMIT_PAUSE=SETTINGS.TRANSMIT_PAUSE
             )
         self.pathfinder = Pathfinder()
-        self.scout = Scout(500, self.MAZE, self.robot)
+        self.scout = Scout(5000, self.MAZE, self.robot)
         self.motorSergeant = MotorSergeant(self.radioOperator)
         self.recon = Recon()
         self.mode = "manual"
@@ -163,11 +163,10 @@ class General:
         while(True):
             self.recon.check_sensors(robot, sensor_ids, radioOperator)
             self.scout.predict()
-            self.scout.update_weights(self.MAZE, self.robot, R = 0.2)
-            neff = self.scout.neff()
-            if neff < 50:
-                indexes = self.scout.systematic_resample()
-                self.scout.resample_from_index(indexes)
+            self.scout.update_weights(self.MAZE, self.robot, sigma = 0.2)
+            neff = self.scout.compute_neff()
+            if neff < 2500:
+                self.scout.resample()
 
     def initialize_maze(self):
         self.MAZE.import_walls()
@@ -190,7 +189,7 @@ class General:
         
         # Draw the particles
         particle_color = (255, 0, 0)  # Color for the particles (red in this case)
-        #particle_radius = 10  # Radius of each particle's circle
+        particle_radius = 5  # Radius of each particle's circle
         
         for particle in self.scout.particles:  # Assuming self.particles is a list of (x, y) tuples
             particle_int_pos = (int(round(SETTINGS.border_pixels + particle.x * SETTINGS.ppi)), 
@@ -198,12 +197,9 @@ class General:
             
             # Calculate the radius based on the particle's weight
             # You might want to define a scaling factor for the weight to radius mapping
-            min_radius = 5  # Minimum particle radius
-            max_radius = 10  # Maximum particle radius
-            weight_scale = 5  # Adjust this value to scale the effect of weight on radius
-            
-            # Calculate radius based on weight, ensuring it's within the defined range
-            particle_radius = min(max_radius, max(min_radius, particle.weight * weight_scale))
+            #min_radius = 5  # Minimum particle radius
+            #max_radius = 10  # Maximum particle radius
+            #weight_scale = 5  # Adjust this value to scale the effect of weight on radius
             
             pygame.draw.circle(self.canvas, particle_color, particle_int_pos, particle_radius)
 
