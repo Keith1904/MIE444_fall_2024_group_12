@@ -188,7 +188,7 @@ class General:
         self.MAZE.draw_walls(self.canvas)
         
         # Draw the particles
-        particle_color = (255, 0, 0)  # Color for the particles (red in this case)
+        particle_color = (0, 0, 255)  # Color for the particles (red in this case)
         particle_radius = 5  # Radius of each particle's circle
         
         for particle in self.scout.particles:  # Assuming self.particles is a list of (x, y) tuples

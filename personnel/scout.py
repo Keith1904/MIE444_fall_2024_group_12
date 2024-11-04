@@ -88,7 +88,7 @@ class Scout:
             # Update the particle's position
             particle.update_position(x=x_new, y=y_new, theta=theta_new)
             
-    def update_weights(self, maze, robot, sigma=0.05, epsilon=1e-6):
+    def update_weights(self, maze, robot, sigma=0.1, epsilon=1e-6):
         """
         Update the weight of each particle based on the actual sensor readings.
 
