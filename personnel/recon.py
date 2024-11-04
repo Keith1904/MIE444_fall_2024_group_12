@@ -32,7 +32,7 @@ class Recon:
             else:
                 print(f"Reading failed on {sensor_id}! Skipping update.")
         
-        time.sleep(0.1)
+        time.sleep(0.3)
     
     def find_closest_sensor(self, robot):
         min_reading = float('inf')
