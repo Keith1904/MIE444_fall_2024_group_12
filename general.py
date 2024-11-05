@@ -34,11 +34,12 @@ class General:
             TRANSMIT_PAUSE=SETTINGS.TRANSMIT_PAUSE
             )
         self.pathfinder = Pathfinder()
-        self.scout = Scout(5000, self.MAZE, self.robot)
+        self.scout = Scout(2000, self.MAZE, self.robot)
         self.motorSergeant = MotorSergeant(self.radioOperator)
         self.recon = Recon()
+        time.sleep(3)
         self.mode = "manual"
-        self.sensors_and_localization_thread = threading.Thread(target=self.sensors_and_localization, args = (self.robot, ['u0', 'u1', 'u2', 'u3', 'm0', 'm1'], self.radioOperator), daemon=True)
+        self.sensors_and_localization_thread = threading.Thread(target=self.sensors_and_localization, args = (self.robot, ['u0', 'u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator), daemon=True)
         self.manual_control_thread = threading.Thread(target=self.manual_control, daemon=True)
         self.sensors_and_localization_thread.start()
         self.manual_control_thread.start()
@@ -46,7 +47,6 @@ class General:
         
         
     def execute_mission(self):
-        #self.scout.localize(self.robot)
         while True:
             self.update_maze()
             if self.mode == 'auto':
@@ -123,39 +123,10 @@ class General:
     def manual_control(self):
         while True:
             if self.mode == 'manual':
-                if keyboard.is_pressed('w'):
-                    if self.last_input != 'w':
-                        self.motorSergeant.stop()
-                        self.motorSergeant.drive(100)
-                        self.last_input = 'w' 
-                elif keyboard.is_pressed('a'):
-                    if self.last_input != 'a':
-                        self.motorSergeant.stop()
-                        self.motorSergeant.rotate(-360)
-                        self.last_input = 'a'
-                elif keyboard.is_pressed('s'):
-                    if self.last_input != 's':
-                        self.motorSergeant.stop()
-                        self.motorSergeant.drive(-100)
-                        self.last_input = 's'
-                elif keyboard.is_pressed('d'):
-                    if self.last_input != 'd':
-                        self.motorSergeant.stop()
-                        self.motorSergeant.rotate(360)
-                        self.last_input = 'd'
-                else:
-                    if self.last_input != '':
-                        self.motorSergeant.stop()
-                        self.last_input = ''
-            # Check for mode switching keys
-            if keyboard.is_pressed('m'):
-                self.mode = 'manual'
-                print("Switched to manual mode.")
-                time.sleep(0.1)  # Small delay to avoid multiple detections
-            elif keyboard.is_pressed('p'):
-                self.mode = 'auto'
-                print("Switched to autonomous mode.")
-                time.sleep(0.1)
+                print("Enter a command: ")
+                command = input()
+                self.radioOperator.broadcast(command)
+                    
 
             time.sleep(0.1)  # Prevent excessive CPU usage
         
@@ -163,10 +134,11 @@ class General:
         while(True):
             self.recon.check_sensors(robot, sensor_ids, radioOperator)
             self.scout.predict()
-            self.scout.update_weights(self.MAZE, self.robot, sigma = 0.2)
+            self.scout.update_weights(self.MAZE, self.robot, sigma = 0.3)
             neff = self.scout.compute_neff()
-            if neff < 2500:
+            if neff < 500:
                 self.scout.resample()
+            time.sleep(1)
 
     def initialize_maze(self):
         self.MAZE.import_walls()
@@ -224,5 +196,7 @@ class Robot:
 if __name__ == "__main__":
     general = General()
     np.random.seed(SETTINGS.floor_seed)
+    #general.radioOperator.broadcast("w0:12")
     general.initialize_maze()
     general.execute_mission()
+    #general.wall_alignment()

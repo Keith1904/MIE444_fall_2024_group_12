@@ -39,7 +39,9 @@ distance_sensors = {
     "u1": {"x": 3.22, "y": 0, "rotation": 90, "reading": 0, "previous_reading": 0},
     "u2": {"x": 0, "y": -3.45, "rotation": 180, "reading": 0, "previous_reading": 0},
     "u3": {"x": -3.22, "y": 0, "rotation": -90, "reading": 0, "previous_reading": 0},
-  #  "t0": {"x": 0, "y": 0, "rotation": 0, "reading": 0}   
+    "u4": {"x": 2.36, "y": 2.36, "rotation": 45, "reading": 0, "previous_reading": 0},
+    "u5": {"x": -2.36, "y": 2.36, "rotation": -45, "reading": 0, "previous_reading": 0}
+  #  "t0": {"x": 0, "y": 0, "rotation": 0, "reading": 0}
 }
 
 motor_encoders = {
@@ -58,7 +60,7 @@ PORT_RX = 61201         # The port used by the *CLIENT* to send data
 
 ### Serial Setup ###
 BAUDRATE = 9600         # Baudrate in bps
-PORT_SERIAL = 'COM3'    # COM port identification
+PORT_SERIAL = 'COM14'    # COM port identification
 TIMEOUT_SERIAL = 1      # Serial port timeout, in seconds
 
 ### Packet Framing values ###
@@ -67,7 +69,7 @@ FRAMEEND = ']'
 CMD_DELIMITER = ','
 
 ### Set whether to use TCP (SimMeR) or serial (Arduino) ###
-SIMULATE = True
+SIMULATE = False
 
 if SIMULATE:
     TRANSMIT_PAUSE = 0.1

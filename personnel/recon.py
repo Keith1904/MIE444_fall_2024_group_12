@@ -4,12 +4,19 @@ class Recon:
         
     def check_sensors(self, robot, sensor_ids, radioOperator, window_size=1):
         readings, time_rx = radioOperator.broadcast(",".join(sensor_ids))
+        while True:
+            if len(readings) != len(sensor_ids):
+                readings, time_rx = radioOperator.broadcast(",".join(sensor_ids))
+                time.sleep(0.5)
+            else:
+                break
         for reading in readings:
             if reading:
                 sensor_id = reading[0]
                 new_value = float(reading[1])
 
                 if sensor_id[0] in ["u", "t", "i"]:
+                        
                     # Add new reading to the list of previous readings
                     if "history" not in robot.distance_sensors[sensor_id]:
                         robot.distance_sensors[sensor_id]["history"] = []
@@ -30,7 +37,7 @@ class Recon:
                     robot.motor_encoders[sensor_id]["previous_reading"] = robot.motor_encoders[sensor_id]["reading"]
                     robot.motor_encoders[sensor_id]["reading"] = new_value
             else:
-                print(f"Reading failed on {sensor_id}! Skipping update.")
+                print("Reading failed on a sensor! Skipping update.")
         
         time.sleep(0.3)
     
