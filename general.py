@@ -55,7 +55,7 @@ class General:
                     print("resetting")
                     distance, direction = self.pathfinder.find_furthest_distance(self.robot)
                     self.motorSergeant.rotate(direction)
-                    time.sleep(5)
+                    time.sleep(3)
                     self.motorSergeant.reset = False
                     self.motorSergeant.reset_cooldown = 3
                 else:
@@ -70,9 +70,9 @@ class General:
                     print("resampling!")
                     self.scout.resample()
                 if not self.motorSergeant.reset:
-                    self.motorSergeant.drive(2)
+                    self.motorSergeant.drive(3)
                     self.motorSergeant.reset_cooldown -= 1
-                    time.sleep(2)
+                    time.sleep(1)
         if self.mode == 'manual':
             self.update_maze()
             self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
@@ -85,7 +85,7 @@ class General:
                     self.wall_alignment()
                 else:
                     self.radioOperator.broadcast(command)
-                    time.sleep(5)
+                    time.sleep(3)
                 self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
                 self.scout.predict()
                 self.scout.update_weights(self.MAZE, self.robot, sigma = 0.2)
@@ -103,7 +103,7 @@ class General:
         print("Aligning with wall...")
         
         # Define a tolerance for alignment
-        tolerance = 0.1  # Adjust as needed for your setup
+        tolerance = 0.2  # Adjust as needed for your setup
         
         while True:
             # Get readings from the sensors
@@ -124,16 +124,16 @@ class General:
                 # Determine rotation direction
                 if right_diff > tolerance:
                     # Rotate left to align the right side
-                    self.motorSergeant.rotate(-5)
+                    self.motorSergeant.rotate(-3)
                 elif right_diff < -tolerance:
                     # Rotate right to align the right side
-                    self.motorSergeant.rotate(5)
+                    self.motorSergeant.rotate(3)
                 elif left_diff > tolerance:
                     # Rotate right to align the left side
-                    self.motorSergeant.rotate(5)
+                    self.motorSergeant.rotate(3)
                 elif left_diff < -tolerance:
                     # Rotate left to align the left side
-                    self.motorSergeant.rotate(-5)
+                    self.motorSergeant.rotate(-3)
                 
                 time.sleep(0.3)   
 

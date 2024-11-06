@@ -44,24 +44,34 @@ class MotorSergeant:
             sensor_distance = math.sqrt(sensor_data['x']**2 + sensor_data['y']**2)
             if reading < 3 and sensor_id == 'u0':
                 self.reset = True
-            if reading  < 1:
+            if reading  < 2:
                 if sensor_id == 'u4':
+                    self.drive(-1)
+                    time.sleep(1)
                     self.rotate(-5)
                     time.sleep(0.5)
                     break
                 elif sensor_id == 'u5':
+                    self.drive(-1)
+                    time.sleep(1)
                     self.rotate(5)
                     time.sleep(0.5)
                     break
                 if sensor_id == "u0":
+                    self.drive(-1)
+                    time.sleep(1)
                     self.reset = True
                     break
             elif 2 < reading < 5:
                 if sensor_id == "u4" and reading > distance_sensors_copy['u1']['reading']:
+                    self.drive(-1)
+                    time.sleep(1)
                     self.rotate(5)
                     time.sleep(0.2)
                     break
                 elif sensor_id == "u5" and reading > distance_sensors_copy['u3']['reading']:
+                    self.drive(-1)
+                    time.sleep(1)                    
                     self.rotate(-5)
                     time.sleep(0.2)
                     break

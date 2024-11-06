@@ -108,7 +108,7 @@ class RadioOperator:
         response_raw = ''
         while time.time() < start_time + self.TIMEOUT_SERIAL:
             if self.SER.in_waiting:
-                response_char = self.SER.read().decode('ascii')
+                response_char = self.SER.read().decode('utf-8', errors='ignore')
                 if response_char == self.FRAMEEND:
                     response_raw += response_char
                     break

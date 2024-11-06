@@ -61,7 +61,7 @@ PORT_RX = 61201         # The port used by the *CLIENT* to send data
 ### Serial Setup ###
 BAUDRATE = 9600         # Baudrate in bps
 PORT_SERIAL = 'COM14'    # COM port identification
-TIMEOUT_SERIAL = 1      # Serial port timeout, in seconds
+TIMEOUT_SERIAL = 1.5      # Serial port timeout, in seconds
 
 ### Packet Framing values ###
 FRAMESTART = '['
@@ -69,7 +69,7 @@ FRAMEEND = ']'
 CMD_DELIMITER = ','
 
 ### Set whether to use TCP (SimMeR) or serial (Arduino) ###
-SIMULATE = True
+SIMULATE = False
 
 if SIMULATE:
     TRANSMIT_PAUSE = 0.1
