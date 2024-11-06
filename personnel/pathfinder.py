@@ -4,7 +4,7 @@ class Pathfinder:
    
     def find_furthest_distance(self, robot):
         # Get readings for all sensors
-        sensor_ids = ['u0', 'u1', 'u2', 'u3']
+        sensor_ids = ['u0', 'u1', 'u2', 'u3', 'u4', 'u5']
         
         # Record the current readings
         current_readings = {sensor_id: robot.distance_sensors[sensor_id]["reading"] for sensor_id in sensor_ids}

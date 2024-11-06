@@ -39,106 +39,102 @@ class General:
         self.recon = Recon()
         time.sleep(3)
         self.mode = "manual"
-        self.sensors_and_localization_thread = threading.Thread(target=self.sensors_and_localization, args = (self.robot, ['u0', 'u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator), daemon=True)
-        self.manual_control_thread = threading.Thread(target=self.manual_control, daemon=True)
-        self.sensors_and_localization_thread.start()
-        self.manual_control_thread.start()
         self.last_input = ''
         
         
     def execute_mission(self):
-        while True:
+        if self.mode == 'auto':
             self.update_maze()
-            if self.mode == 'auto':
+            self.wall_alignment()
+            self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
+            self.scout.update_weights(self.MAZE, self.robot, sigma = 0.2)
+            while True:
+                self.update_maze()
                 if self.motorSergeant.reset:
                     print("resetting")
-                    #self.wall_alignment()
                     distance, direction = self.pathfinder.find_furthest_distance(self.robot)
                     self.motorSergeant.rotate(direction)
-                    time.sleep(0.5)
-                    while self.motorSergeant.movement_in_progress(self.robot):
-                        time.sleep(0.3)
-                    print("sending it")
-                    self.motorSergeant.drive(distance - 1)
+                    time.sleep(5)
                     self.motorSergeant.reset = False
-                    self.motorSergeant.reset_cooldown = self.robot.motor_encoders["m0"]["reading"]
-                    time.sleep(0.5)
-                elif self.motorSergeant.movement_in_progress(self.robot):
-                    self.motorSergeant.check_for_collision(self.robot)
-                    time.sleep(0.1)
+                    self.motorSergeant.reset_cooldown = 3
                 else:
-                    time.sleep(0.5)
-                    if not self.motorSergeant.movement_in_progress(self.robot):
-                        self.motorSergeant.reset = True
-            else:
-                time.sleep(0.5)
+                    self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5'], self.radioOperator)
+                    self.motorSergeant.adjust(self.robot)
+                    time.sleep(1)
+                self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
+                self.scout.predict()
+                self.scout.update_weights(self.MAZE, self.robot, sigma = 0.2)
+                neff = self.scout.compute_neff()
+                if neff < 500:
+                    print("resampling!")
+                    self.scout.resample()
+                if not self.motorSergeant.reset:
+                    self.motorSergeant.drive(2)
+                    self.motorSergeant.reset_cooldown -= 1
+                    time.sleep(2)
+        if self.mode == 'manual':
+            self.update_maze()
+            self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
+            self.scout.update_weights(self.MAZE, self.robot, sigma = 0.2)
+            while True:
+                self.update_maze()
+                print("Enter a command: ")
+                command = input()
+                if command == "align":
+                    self.wall_alignment()
+                else:
+                    self.radioOperator.broadcast(command)
+                    time.sleep(5)
+                self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
+                self.scout.predict()
+                self.scout.update_weights(self.MAZE, self.robot, sigma = 0.2)
+                neff = self.scout.compute_neff()
+                if neff < 500:
+                    print("resampling!")
+                    self.scout.resample()
+                    
+                
+            
+                
+                
 
     def wall_alignment(self):
         print("Aligning with wall...")
-        time.sleep(1)
-        step_distance = 1  # Move forward by 1 inch (adjust as needed)
-        # Get initial readings from left and right sensors (u1 and u3)
-        initial_left = self.robot.distance_sensors['u1']["reading"]
-        initial_right = self.robot.distance_sensors['u3']["reading"]
-        if self.robot.distance_sensors['u0']["reading"] > self.robot.distance_sensors['u2']["reading"]:
-            # Move forward a short distance
-            direction = 1
-            self.motorSergeant.drive(direction * step_distance)
-            time.sleep(4)  # Small delay for the robot to stabilize after moving
-        else:
-            direction = -1
-            self.motorSergeant.drive(direction * step_distance)
-            time.sleep(4)  # Small delay for the robot to stabilize after moving
-            
         
-        # Get new readings from left and right sensors (u1 and u3)
-        new_left = self.robot.distance_sensors['u1']["reading"]
-        new_right = self.robot.distance_sensors['u3']["reading"]
+        # Define a tolerance for alignment
+        tolerance = 0.1  # Adjust as needed for your setup
         
-        # Calculate the differences in distances
-        left_diff = new_left - initial_left
-        right_diff = new_right - initial_right
-        # Calculate the deviation angle using arctan
-        if abs(left_diff) < abs(right_diff) and abs(left_diff) < 1:
-            print(left_diff)
-            deviation_angle = math.degrees(math.atan(direction * (left_diff) / step_distance))
-        elif right_diff < 1:
-            deviation_angle = math.degrees(-math.atan(direction * (right_diff) / step_distance))
-        else:
-            deviation_angle = 0
-        # Rotate the robot to correct the alignment
-        if abs(deviation_angle) > 5:  # Threshold to detect misalignment (adjust as needed)
-            print(f"Deviation detected: {deviation_angle:.2f} degrees")
-
-            if deviation_angle > 0:
-                print("Rotating clockwise to align...")
-                self.motorSergeant.rotate(deviation_angle)
-            else:
-                print("Rotating counterclockwise to align...")
-                self.motorSergeant.rotate(deviation_angle)
-            
-
-        print("Alignment done!") 
-    
-    def manual_control(self):
         while True:
-            if self.mode == 'manual':
-                print("Enter a command: ")
-                command = input()
-                self.radioOperator.broadcast(command)
-                    
-
-            time.sleep(0.1)  # Prevent excessive CPU usage
-        
-    def sensors_and_localization(self, robot, sensor_ids, radioOperator):
-        while(True):
-            self.recon.check_sensors(robot, sensor_ids, radioOperator)
-            self.scout.predict()
-            self.scout.update_weights(self.MAZE, self.robot, sigma = 0.3)
-            neff = self.scout.compute_neff()
-            if neff < 500:
-                self.scout.resample()
-            time.sleep(1)
+            # Get readings from the sensors
+            self.recon.check_sensors(self.robot, ['u1', 'u3', 'u4', 'u5'], self.radioOperator)
+            
+            # Calculate the differences for each side
+            right_diff = self.robot.distance_sensors['u1']['reading'] - self.robot.distance_sensors['u4']['reading']
+            left_diff = self.robot.distance_sensors['u3']['reading'] - self.robot.distance_sensors['u5']['reading']
+            
+            # Check if the robot is aligned on both sides
+            if abs(right_diff) < tolerance or abs(left_diff) < tolerance:
+                print("Wall alignment successful.")
+                print(f"Right diff: {right_diff}, Left diff: {left_diff}")
+                break
+            else:
+                print(f"Aligning... Right diff: {right_diff}, Left diff: {left_diff}")
+                
+                # Determine rotation direction
+                if right_diff > tolerance:
+                    # Rotate left to align the right side
+                    self.motorSergeant.rotate(-5)
+                elif right_diff < -tolerance:
+                    # Rotate right to align the right side
+                    self.motorSergeant.rotate(5)
+                elif left_diff > tolerance:
+                    # Rotate right to align the left side
+                    self.motorSergeant.rotate(5)
+                elif left_diff < -tolerance:
+                    # Rotate left to align the left side
+                    self.motorSergeant.rotate(-5)
+                
+                time.sleep(0.3)   
 
     def initialize_maze(self):
         self.MAZE.import_walls()
@@ -196,7 +192,5 @@ class Robot:
 if __name__ == "__main__":
     general = General()
     np.random.seed(SETTINGS.floor_seed)
-    #general.radioOperator.broadcast("w0:12")
     general.initialize_maze()
     general.execute_mission()
-    #general.wall_alignment()

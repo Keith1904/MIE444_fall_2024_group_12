@@ -62,8 +62,8 @@ class Scout:
             delta_theta = 0
 
         # Define the standard deviations for noise in distance and angle
-        distance_noise_std = 0.1  # Adjust based on your observations
-        angle_noise_std = 0.5     # Adjust based on your observations
+        distance_noise_std = 0.5  # Adjust based on your observations
+        angle_noise_std = 5     # Adjust based on your observations
 
         for particle in self.particles:
             # Add Gaussian noise to the distance and angle
@@ -99,7 +99,7 @@ class Scout:
         """
         total_weight = 0.0
 
-        sensor_ids = ["u0", "u1", "u2", "u3"]
+        sensor_ids = ["u0", "u1", "u2", "u3", "u4", "u5"]
         for particle in self.particles:
             # Initialize the weight of this particle
             particle.weight = 1.0
@@ -221,7 +221,6 @@ class Particle:
         beam_end = pygame.math.Vector2.rotate(length, -sensor_angle) + [sensor_x, sensor_y]
         beam = [pygame.math.Vector2(sensor_x, sensor_y), beam_end]
         
-        #print(f"beam before: {beam}")
         walls_to_check = maze.reduced_walls
         squared_distance = 100^2
         for wall in walls_to_check:
