@@ -40,6 +40,7 @@ class General:
         time.sleep(3)
         self.mode = "manual"
         self.last_input = ''
+        self.dropoff_point = (0, 0)
         
         
     def execute_mission(self):

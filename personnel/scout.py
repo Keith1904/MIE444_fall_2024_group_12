@@ -14,6 +14,9 @@ class Scout:
         self.maze = maze
         self.particles = self.initialize_particles()
         self.robot = robot
+        self.average_x = 0
+        self.average_y = 0
+        self.average_theta = 0
     
     def initialize_particles(self):
         """Randomly generate the first batch of particles around the maze in valid locations."""
@@ -195,6 +198,30 @@ class Scout:
             return 0
         return 1.0 / sum_of_squares
     
+    def weighted_average(self):
+        total_weight = sum(particle.weight for particle in self.particles)
+        
+        # Avoid division by zero
+        if total_weight == 0:
+            print("Warning: Total weight is zero. Adjusting weights to avoid collapse.")
+            total_weight = len(self.particles)  # fallback to average without weights
+
+        # Compute weighted sums
+        weighted_x = sum(particle.x * particle.weight for particle in self.particles) / total_weight
+        weighted_y = sum(particle.y * particle.weight for particle in self.particles) / total_weight
+
+        # Handling theta requires a bit more care because it's an angular value.
+        # We'll calculate the mean using trigonometric averaging.
+        weighted_cos_theta = sum(math.cos(particle.theta) * particle.weight for particle in self.particles) / total_weight
+        weighted_sin_theta = sum(math.sin(particle.theta) * particle.weight for particle in self.particles) / total_weight
+        
+        # Calculate the average theta by converting back from sine and cosine to an angle
+        weighted_theta = math.atan2(weighted_sin_theta, weighted_cos_theta)
+
+        self.average_x = weighted_x
+        self.average_y = weighted_y
+        self.average_theta = weighted_theta
+    
 class Particle:
     '''Defines the attributes of a particle including it's position and weight.'''
     
@@ -216,7 +243,7 @@ class Particle:
     def simulate_ultrasonic_sensor(self, maze, robot, sensor_id):
         sensor_angle = self.theta - robot.distance_sensors[sensor_id]["rotation"]
         length = pygame.math.Vector2(100,0)
-        sensor_x = self.x + robot.distance_sensors[sensor_id]["y"] * math.cos(math.radians(self.theta)) + robot.distance_sensors[sensor_id]["x"] * math.sin(math.radians(self.theta)) 
+        sensor_x = self.x + robot.distance_sensors[sensor_id]["y"] * math.cos(math.radians(self.theta)) + robot.distance_sensors[sensor_id]["x"] * math.sin(math.radians(self.theta))
         sensor_y = self.y + robot.distance_sensors[sensor_id]["x"] * math.cos(math.radians(self.theta)) - robot.distance_sensors[sensor_id]["y"] * math.sin(math.radians(self.theta))
         beam_end = pygame.math.Vector2.rotate(length, -sensor_angle) + [sensor_x, sensor_y]
         beam = [pygame.math.Vector2(sensor_x, sensor_y), beam_end]
