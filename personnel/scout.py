@@ -3,6 +3,8 @@ import numpy as np
 import math
 import pygame
 import scipy.stats
+from collections import Counter
+from statistics import mean
 import utilities
 
 class Scout:
@@ -91,7 +93,7 @@ class Scout:
             # Update the particle's position
             particle.update_position(x=x_new, y=y_new, theta=theta_new)
             
-    def update_weights(self, maze, robot, sigma=0.3, epsilon=1e-6):
+    def update_weights(self, maze, robot, sigma=0.3, epsilon=1e-8):
         """
         Update the weight of each particle based on the actual sensor readings.
 
@@ -205,18 +207,28 @@ class Scout:
             print("Warning: Total weight is zero. Adjusting weights to avoid collapse.")
             total_weight = len(self.particles)  # fallback to average without weights
 
-        # Compute weighted sums
+        # Compute weighted sums for x and y
         weighted_x = sum(particle.x * particle.weight for particle in self.particles) / total_weight
         weighted_y = sum(particle.y * particle.weight for particle in self.particles) / total_weight
 
-        # Handling theta requires a bit more care because it's an angular value.
-        # We'll calculate the mean using trigonometric averaging.
-        weighted_cos_theta = sum(math.cos(particle.theta)  for particle in self.particles) / len(self.particles)
-        weighted_sin_theta = sum(math.sin(particle.theta)  for particle in self.particles) / len(self.particles)
-        
-        # Calculate the average theta by converting back from sine and cosine to an angle
-        weighted_theta = math.atan2(weighted_sin_theta, weighted_cos_theta)
+        # For theta, find the mode of the integer-cast values
+        integer_thetas = [int(math.degrees(particle.theta) % 360) for particle in self.particles]
+        theta_counts = Counter(integer_thetas)  # Count occurrences of each angle
 
+        # Find the mode(s) — angles with the highest count
+        max_count = max(theta_counts.values())
+        mode_candidates = [angle for angle, count in theta_counts.items() if count == max_count]
+
+        # If there’s a tie, take the average of the tied angles
+        if len(mode_candidates) > 1:
+            mode_theta_deg = mean(mode_candidates)
+        else:
+            mode_theta_deg = mode_candidates[0]
+
+        # Convert back to radians for consistency
+        weighted_theta = math.radians(mode_theta_deg)
+
+        # Set attributes
         self.average_x = weighted_x
         self.average_y = weighted_y
         self.average_theta = weighted_theta

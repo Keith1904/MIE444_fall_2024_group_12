@@ -55,7 +55,7 @@ class General:
                     print("resetting")
                     distance, direction = self.pathfinder.find_furthest_distance(self.robot)
                     self.motorSergeant.rotate(direction)
-                    time.sleep(3)
+                    time.sleep(1)
                     self.motorSergeant.reset = False
                     self.motorSergeant.reset_cooldown = 3
                 else:
@@ -95,16 +95,13 @@ class General:
                     print("resampling!")
                     self.scout.resample()
                     
-                
-            
-                
-                
-
     def wall_alignment(self):
         print("Aligning with wall...")
         
-        # Define a tolerance for alignment
-        tolerance = 0.2  # Adjust as needed for your setup
+        # Define a base tolerance for alignment
+        alignment_tolerance = 0.2  # General alignment tolerance
+        max_rotation_step = 3      # Maximum step size for large misalignments
+        min_rotation_step = 0.5    # Minimum step size to ensure gradual adjustment
         
         while True:
             # Get readings from the sensors
@@ -115,28 +112,30 @@ class General:
             left_diff = self.robot.distance_sensors['u3']['reading'] - self.robot.distance_sensors['u5']['reading']
             
             # Check if the robot is aligned on both sides
-            if abs(right_diff) < tolerance or abs(left_diff) < tolerance:
+            if abs(right_diff) < alignment_tolerance and abs(left_diff) < alignment_tolerance:
                 print("Wall alignment successful.")
                 print(f"Right diff: {right_diff}, Left diff: {left_diff}")
                 break
             else:
                 print(f"Aligning... Right diff: {right_diff}, Left diff: {left_diff}")
                 
-                # Determine rotation direction
-                if right_diff > tolerance:
-                    # Rotate left to align the right side
-                    self.motorSergeant.rotate(-3)
-                elif right_diff < -tolerance:
-                    # Rotate right to align the right side
-                    self.motorSergeant.rotate(3)
-                elif left_diff > tolerance:
-                    # Rotate right to align the left side
-                    self.motorSergeant.rotate(3)
-                elif left_diff < -tolerance:
-                    # Rotate left to align the left side
-                    self.motorSergeant.rotate(-3)
+                # Calculate scaled rotation steps based on the difference, capped between min and max
+                right_rotation_step = max(min(abs(right_diff), max_rotation_step), min_rotation_step)
+                left_rotation_step = max(min(abs(left_diff), max_rotation_step), min_rotation_step)
                 
-                time.sleep(0.3)   
+                # Adjust rotation direction based on the differences
+                if right_diff > alignment_tolerance:
+                    # Rotate left to align the right side
+                    self.motorSergeant.rotate(-right_rotation_step)
+                elif right_diff < -alignment_tolerance:
+                    # Rotate right to align the right side
+                    self.motorSergeant.rotate(right_rotation_step)
+                elif left_diff > alignment_tolerance:
+                    # Rotate right to align the left side
+                    self.motorSergeant.rotate(left_rotation_step)
+                elif left_diff < -alignment_tolerance:
+                    # Rotate left to align the left side
+                    self.motorSergeant.rotate(-left_rotation_step)
 
     def initialize_maze(self):
         self.MAZE.import_walls()
@@ -197,19 +196,6 @@ class General:
 
         # Flip the display (update the canvas)
         pygame.display.flip()
-
-    def median_angle(self, angles):
-        # Ensure all angles are in the range [0, 360) for consistent sorting
-        angles = [(angle % 360) for angle in angles]
-        
-        # Sort the angles and find the median
-        angles.sort()
-        n = len(angles)
-        
-        if n % 2 == 1:  # Odd number of angles
-            return angles[n // 2]
-        else:  # Even number of angles, take the average of the two middle angles
-            return (angles[n // 2 - 1] + angles[n // 2]) / 2
     
         
         
