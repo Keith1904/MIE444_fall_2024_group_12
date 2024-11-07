@@ -129,10 +129,9 @@ class Scout:
 
         # Check if total_weight is zero and normalize
         if total_weight < epsilon:
-            print("Warning: Total weight is too close to zero, skipping normalization.")
+            print("Warning: Total weight is too close to zero, reinitializing particles!")
             # Optionally reinitialize particles if total weight is zero to avoid collapse
-            for particle in self.particles:
-                particle.weight = 1.0 / len(self.particles)
+            self.particles = self.initialize_particles()
         else:
             # Normalize weights
             for particle in self.particles:
@@ -212,8 +211,8 @@ class Scout:
 
         # Handling theta requires a bit more care because it's an angular value.
         # We'll calculate the mean using trigonometric averaging.
-        weighted_cos_theta = sum(math.cos(particle.theta) * particle.weight for particle in self.particles) / total_weight
-        weighted_sin_theta = sum(math.sin(particle.theta) * particle.weight for particle in self.particles) / total_weight
+        weighted_cos_theta = sum(math.cos(particle.theta)  for particle in self.particles) / len(self.particles)
+        weighted_sin_theta = sum(math.sin(particle.theta)  for particle in self.particles) / len(self.particles)
         
         # Calculate the average theta by converting back from sine and cosine to an angle
         weighted_theta = math.atan2(weighted_sin_theta, weighted_cos_theta)
@@ -221,6 +220,18 @@ class Scout:
         self.average_x = weighted_x
         self.average_y = weighted_y
         self.average_theta = weighted_theta
+
+    def calculate_entropy(self):
+        epsilon = 1e-6
+        weights = [particle.weight for particle in self.particles]
+        # Normalize weights
+        total_weight = sum(weights)
+        normalized_weights = [w / (total_weight + epsilon) for w in weights]
+        
+        # Calculate entropy
+        entropy = -sum(w * math.log(w + epsilon) for w in normalized_weights)
+        print(f"entropy: {entropy}")
+        return entropy
     
 class Particle:
     '''Defines the attributes of a particle including it's position and weight.'''

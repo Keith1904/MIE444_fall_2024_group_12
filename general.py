@@ -38,7 +38,7 @@ class General:
         self.motorSergeant = MotorSergeant(self.radioOperator)
         self.recon = Recon()
         time.sleep(3)
-        self.mode = "manual"
+        self.mode = "auto"
         self.last_input = ''
         self.dropoff_point = (0, 0)
         
@@ -69,6 +69,7 @@ class General:
                 if neff < 500:
                     print("resampling!")
                     self.scout.resample()
+                self.scout.weighted_average()
                 if not self.motorSergeant.reset:
                     self.motorSergeant.drive(3)
                     self.motorSergeant.reset_cooldown -= 1
@@ -144,7 +145,7 @@ class General:
         CANVAS_HEIGHT = self.MAZE.size_y * SETTINGS.ppi + SETTINGS.border_pixels * 2
         pygame.init()
         self.canvas = pygame.display.set_mode([CANVAS_WIDTH, CANVAS_HEIGHT])
-      
+
     def update_maze(self):
         game_events = pygame.event.get()
         keypress = pygame.key.get_pressed()
@@ -155,25 +156,60 @@ class General:
 
         # Draw the maze walls
         self.MAZE.draw_walls(self.canvas)
-        
+
         # Draw the particles
-        particle_color = (0, 0, 255)  # Color for the particles (red in this case)
+        particle_color = (0, 0, 255)  # Color for the particles (blue)
         particle_radius = 5  # Radius of each particle's circle
-        
-        for particle in self.scout.particles:  # Assuming self.particles is a list of (x, y) tuples
-            particle_int_pos = (int(round(SETTINGS.border_pixels + particle.x * SETTINGS.ppi)), 
-                                int(round(SETTINGS.border_pixels + particle.y * SETTINGS.ppi)))
-            
-            # Calculate the radius based on the particle's weight
-            # You might want to define a scaling factor for the weight to radius mapping
-            #min_radius = 5  # Minimum particle radius
-            #max_radius = 10  # Maximum particle radius
-            #weight_scale = 5  # Adjust this value to scale the effect of weight on radius
-            
+
+        for particle in self.scout.particles:
+            particle_int_pos = (
+                int(round(SETTINGS.border_pixels + particle.x * SETTINGS.ppi)),
+                int(round(SETTINGS.border_pixels + particle.y * SETTINGS.ppi))
+            )
             pygame.draw.circle(self.canvas, particle_color, particle_int_pos, particle_radius)
 
-            # Flip the display (update the canvas)
-            pygame.display.flip()
+        # Draw the average position (green dot) and direction (small line)
+        avg_x = self.scout.average_x
+        avg_y = self.scout.average_y
+        angles = [particle.theta for particle in self.scout.particles]  # Collect all particle angles
+        median_theta = self.median_angle(angles)  # Calculate the median angle
+
+        # Convert average (x, y) to screen position
+        avg_pos = (
+            int(round(SETTINGS.border_pixels + avg_x * SETTINGS.ppi)),
+            int(round(SETTINGS.border_pixels + avg_y * SETTINGS.ppi))
+        )
+
+        # Draw the green dot at the average position
+        avg_color = (0, 255, 0)  # Green color
+        avg_radius = 6  # Radius of the average position dot
+        pygame.draw.circle(self.canvas, avg_color, avg_pos, avg_radius)
+
+        # Calculate the end of the direction line
+        line_length = 15  # Length of the direction indicator line
+        end_pos = (
+            int(avg_pos[0] + line_length * math.cos(median_theta)),
+            int(avg_pos[1] + line_length * math.sin(median_theta))
+        )
+
+        # Draw the direction line from the center of the green dot
+        pygame.draw.line(self.canvas, avg_color, avg_pos, end_pos, 2)
+
+        # Flip the display (update the canvas)
+        pygame.display.flip()
+
+    def median_angle(self, angles):
+        # Ensure all angles are in the range [0, 360) for consistent sorting
+        angles = [(angle % 360) for angle in angles]
+        
+        # Sort the angles and find the median
+        angles.sort()
+        n = len(angles)
+        
+        if n % 2 == 1:  # Odd number of angles
+            return angles[n // 2]
+        else:  # Even number of angles, take the average of the two middle angles
+            return (angles[n // 2 - 1] + angles[n // 2]) / 2
     
         
         
