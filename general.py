@@ -99,7 +99,7 @@ class General:
         print("Aligning with wall...")
         
         # Define a base tolerance for alignment
-        alignment_tolerance = 0.2  # General alignment tolerance
+        alignment_tolerance = 0.4  # General alignment tolerance
         max_rotation_step = 3      # Maximum step size for large misalignments
         min_rotation_step = 0.5    # Minimum step size to ensure gradual adjustment
         
@@ -170,8 +170,7 @@ class General:
         # Draw the average position (green dot) and direction (small line)
         avg_x = self.scout.average_x
         avg_y = self.scout.average_y
-        angles = [particle.theta for particle in self.scout.particles]  # Collect all particle angles
-        median_theta = self.median_angle(angles)  # Calculate the median angle
+        median_theta = self.scout.average_theta
 
         # Convert average (x, y) to screen position
         avg_pos = (
