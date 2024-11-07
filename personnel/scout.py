@@ -130,7 +130,8 @@ class Scout:
             total_weight += particle.weight
 
         # Check if total_weight is zero and normalize
-        if total_weight < epsilon:
+        print(f"stdev: {self.position_standard_deviation()}")
+        if total_weight < epsilon and self.position_standard_deviation() > 8:
             print("Warning: Total weight is too close to zero, reinitializing particles!")
             # Optionally reinitialize particles if total weight is zero to avoid collapse
             self.particles = self.initialize_particles()
@@ -238,6 +239,29 @@ class Scout:
         entropy = -sum(w * math.log(w + epsilon) for w in normalized_weights)
         print(f"entropy: {entropy}")
         return entropy
+
+    def position_standard_deviation(self):
+        total_weight = sum(particle.weight for particle in self.particles)
+
+        # Avoid division by zero
+        if total_weight == 0:
+            print("Warning: Total weight is zero. Adjusting weights to avoid collapse.")
+            total_weight = len(self.particles)  # fallback to average without weights
+
+        # Compute weighted averages for x and y
+        weighted_x = sum(particle.x * particle.weight for particle in self.particles) / total_weight
+        weighted_y = sum(particle.y * particle.weight for particle in self.particles) / total_weight
+
+        # Calculate weighted variance of the Euclidean distances
+        weighted_distance_variance = sum(
+            particle.weight * ((particle.x - weighted_x) ** 2 + (particle.y - weighted_y) ** 2)
+            for particle in self.particles
+        ) / total_weight
+
+        # Standard deviation as the square root of the variance
+        std_dev_distance = math.sqrt(weighted_distance_variance)
+
+        return std_dev_distance
     
 class Particle:
     '''Defines the attributes of a particle including it's position and weight.'''
