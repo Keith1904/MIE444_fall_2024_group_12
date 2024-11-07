@@ -198,10 +198,10 @@ class Scout:
         if sum_of_squares == 0:  # Avoid division by zero
             return 0
         return 1.0 / sum_of_squares
-    
+
     def weighted_average(self):
         total_weight = sum(particle.weight for particle in self.particles)
-        
+
         # Avoid division by zero
         if total_weight == 0:
             print("Warning: Total weight is zero. Adjusting weights to avoid collapse.")
@@ -211,24 +211,18 @@ class Scout:
         weighted_x = sum(particle.x * particle.weight for particle in self.particles) / total_weight
         weighted_y = sum(particle.y * particle.weight for particle in self.particles) / total_weight
 
-        # For theta, find the mode of the integer-cast values
-        integer_thetas = [int(math.degrees(particle.theta) % 360) for particle in self.particles]
-        theta_counts = Counter(integer_thetas)  # Count occurrences of each angle
-
-        # Find the mode(s) — angles with the highest count
-        max_count = max(theta_counts.values())
-        mode_candidates = [angle for angle, count in theta_counts.items() if count == max_count]
-
-        # If there’s a tie, take the average of the tied angles
-        if len(mode_candidates) > 1:
-            mode_theta_deg = mean(mode_candidates)
+        # Track previous position to calculate vector
+        if hasattr(self, 'average_x') and hasattr(self, 'average_y'):
+            previous_x, previous_y = self.average_x, self.average_y
         else:
-            mode_theta_deg = mode_candidates[0]
+            previous_x, previous_y = weighted_x, weighted_y  # Initialize to current if no previous value exists
 
-        # Convert back to radians for consistency
-        weighted_theta = math.radians(mode_theta_deg)
+        # Calculate the vector and its orientation angle
+        delta_x = weighted_x - previous_x
+        delta_y = weighted_y - previous_y
+        weighted_theta = math.atan2(delta_y, delta_x)
 
-        # Set attributes
+        # Update the stored average position
         self.average_x = weighted_x
         self.average_y = weighted_y
         self.average_theta = weighted_theta

@@ -170,7 +170,7 @@ class General:
         # Draw the average position (green dot) and direction (small line)
         avg_x = self.scout.average_x
         avg_y = self.scout.average_y
-        median_theta = self.scout.average_theta
+        avg_theta = self.scout.average_theta
 
         # Convert average (x, y) to screen position
         avg_pos = (
@@ -185,9 +185,10 @@ class General:
 
         # Calculate the end of the direction line
         line_length = 15  # Length of the direction indicator line
+        
         end_pos = (
-            int(avg_pos[0] + line_length * math.cos(median_theta)),
-            int(avg_pos[1] + line_length * math.sin(median_theta))
+            int(avg_pos[0] + line_length * math.cos(avg_theta)),
+            int(avg_pos[1] + line_length * math.sin(avg_theta))
         )
 
         # Draw the direction line from the center of the green dot
