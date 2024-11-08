@@ -67,6 +67,6 @@ class MotorSergeant:
                     self.rotate(-5)
                     break
             elif reading > distance_sensors_copy["u0"]["reading"] + 8 and self.reset_cooldown <= 0:
-                if distance_sensors_copy["u1"]["reading"] > distance_sensors_copy["u0"]["reading"] + 8 and distance_sensors_copy["u4"]["reading"] > distance_sensors_copy["u0"]["reading"] + 8 or distance_sensors_copy["u1"]["reading"] > distance_sensors_copy["u3"]["reading"] + 8 and distance_sensors_copy["u5"]["reading"] > distance_sensors_copy["u0"]["reading"] + 8:
+                if distance_sensors_copy["u1"]["reading"] > distance_sensors_copy["u0"]["reading"] + 8 and distance_sensors_copy["u4"]["reading"] > distance_sensors_copy["u0"]["reading"] + 8 or distance_sensors_copy["u3"]["reading"] > distance_sensors_copy["u0"]["reading"] + 8 and distance_sensors_copy["u5"]["reading"] > distance_sensors_copy["u0"]["reading"] + 8:
                     self.reset = True
                     break
