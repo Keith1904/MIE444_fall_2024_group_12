@@ -33,27 +33,35 @@ class General:
             SIMULATE=SETTINGS.SIMULATE,
             TRANSMIT_PAUSE=SETTINGS.TRANSMIT_PAUSE
             )
-        self.pathfinder = Pathfinder()
-        self.scout = Scout(2000, self.MAZE, self.robot)
+        self.pathfinder = Pathfinder(SETTINGS.walls)
+        self.scout = Scout(2500, self.MAZE, self.robot)
         self.motorSergeant = MotorSergeant(self.radioOperator)
         self.recon = Recon()
         time.sleep(3)
         self.mode = "auto"
         self.last_input = ''
-        self.dropoff_point = (0, 0)
+        self.objective = "lz"
+        self.dropoff_point = (2, 2)
         
         
     def execute_mission(self):
         if self.mode == 'auto':
             self.update_maze()
-            self.wall_alignment()
+            #self.wall_alignment()
             self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
             self.scout.update_weights(self.MAZE, self.robot, sigma = 0.2)
             while True:
                 self.update_maze()
                 if self.motorSergeant.reset:
                     print("resetting")
-                    distance, direction = self.pathfinder.find_furthest_distance(self.robot)
+                    if self.scout.localized:
+                        if self.objective == "lz":
+                            ("Heading to lz!")
+                            direction = self.pathfinder.get_turn_angle((self.scout.average_x, self.scout.average_y), self.scout.average_theta, (0, 0))
+                        elif self.objective == "dp":
+                            direction = self.pathfinder.get_turn_angle((self.scout.average_x, self.scout.average_y), self.scout.average_theta, self.dropoff_point)
+                    else: 
+                        distance, direction = self.pathfinder.find_furthest_distance(self.robot)
                     self.motorSergeant.rotate(direction)
                     time.sleep(1)
                     self.motorSergeant.reset = False
@@ -64,20 +72,20 @@ class General:
                     time.sleep(1)
                 self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
                 self.scout.predict()
-                self.scout.update_weights(self.MAZE, self.robot, sigma = 0.2)
+                self.scout.update_weights(self.MAZE, self.robot, sigma = 0.4)
                 neff = self.scout.compute_neff()
                 if neff < 500:
                     print("resampling!")
                     self.scout.resample()
                 self.scout.weighted_average()
                 if not self.motorSergeant.reset:
-                    self.motorSergeant.drive(3)
+                    self.motorSergeant.drive(2)
                     self.motorSergeant.reset_cooldown -= 1
                     time.sleep(1)
         if self.mode == 'manual':
             self.update_maze()
             self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
-            self.scout.update_weights(self.MAZE, self.robot, sigma = 0.2)
+            self.scout.update_weights(self.MAZE, self.robot, sigma = 0.4)
             while True:
                 self.update_maze()
                 print("Enter a command: ")
@@ -91,7 +99,7 @@ class General:
                 self.scout.predict()
                 self.scout.update_weights(self.MAZE, self.robot, sigma = 0.2)
                 neff = self.scout.compute_neff()
-                if neff < 500:
+                if neff < 1250:
                     print("resampling!")
                     self.scout.resample()
                     
@@ -197,6 +205,14 @@ class General:
         # Flip the display (update the canvas)
         pygame.display.flip()
     
+    def update_objective(self):
+        if self.scout.localized:
+            current_location = (self.scout.average_x // 12, self.scout.average_y // 12)
+            if self.objective == "lz":
+               if current_location == (0, 0) or current_location == (0, 1) or current_location == (1, 0) or current_location == (1, 1):
+                   print("Arrived at loading zone!")
+                   self.objective = "dp"
+    
         
         
 class Robot:
@@ -215,5 +231,5 @@ class Robot:
 if __name__ == "__main__":
     general = General()
     np.random.seed(SETTINGS.floor_seed)
-    general.initialize_maze()
+    general.initialize_maze()      
     general.execute_mission()

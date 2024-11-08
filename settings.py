@@ -69,7 +69,7 @@ FRAMEEND = ']'
 CMD_DELIMITER = ','
 
 ### Set whether to use TCP (SimMeR) or serial (Arduino) ###
-SIMULATE = False
+SIMULATE = True
 
 if SIMULATE:
     TRANSMIT_PAUSE = 0.1

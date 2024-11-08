@@ -19,6 +19,7 @@ class Scout:
         self.average_x = 0
         self.average_y = 0
         self.average_theta = 0
+        self.localized = False
     
     def initialize_particles(self):
         """Randomly generate the first batch of particles around the maze in valid locations."""
@@ -67,7 +68,7 @@ class Scout:
             delta_theta = 0
 
         # Define the standard deviations for noise in distance and angle
-        distance_noise_std = 0.5  # Adjust based on your observations
+        distance_noise_std = 1  # Adjust based on your observations
         angle_noise_std = 5     # Adjust based on your observations
 
         for particle in self.particles:
@@ -130,11 +131,21 @@ class Scout:
             total_weight += particle.weight
 
         # Check if total_weight is zero and normalize
-        print(f"stdev: {self.position_standard_deviation()}")
-        if total_weight < epsilon and self.position_standard_deviation() > 8:
+        stdev = self.position_standard_deviation()
+        print(f"stdev: {stdev}")
+        if stdev < 2:
+            self.localized = True
+            print("localized!")
+        if total_weight < epsilon and self.position_standard_deviation() > 6:
             print("Warning: Total weight is too close to zero, reinitializing particles!")
             # Optionally reinitialize particles if total weight is zero to avoid collapse
             self.particles = self.initialize_particles()
+            self.localized = False
+        elif total_weight < epsilon:
+            print("Warning: Total weight is too close to zero, skipping normalization.")
+            # Optionally reinitialize particles if total weight is zero to avoid collapse
+            for particle in self.particles:
+                particle.weight = 1.0 / len(self.particles)            
         else:
             # Normalize weights
             for particle in self.particles:
@@ -241,25 +252,20 @@ class Scout:
         return entropy
 
     def position_standard_deviation(self):
-        total_weight = sum(particle.weight for particle in self.particles)
 
-        # Avoid division by zero
-        if total_weight == 0:
-            print("Warning: Total weight is zero. Adjusting weights to avoid collapse.")
-            total_weight = len(self.particles)  # fallback to average without weights
 
-        # Compute weighted averages for x and y
-        weighted_x = sum(particle.x * particle.weight for particle in self.particles) / total_weight
-        weighted_y = sum(particle.y * particle.weight for particle in self.particles) / total_weight
+        # Compute averages for x and y
+        x = sum(particle.x for particle in self.particles) / len(self.particles)
+        y = sum(particle.y for particle in self.particles) / len(self.particles)
 
         # Calculate weighted variance of the Euclidean distances
-        weighted_distance_variance = sum(
-            particle.weight * ((particle.x - weighted_x) ** 2 + (particle.y - weighted_y) ** 2)
+        distance_variance = sum(
+            ((particle.x - x) ** 2 + (particle.y - y) ** 2)
             for particle in self.particles
-        ) / total_weight
+        ) / (len(self.particles) - 1)
 
         # Standard deviation as the square root of the variance
-        std_dev_distance = math.sqrt(weighted_distance_variance)
+        std_dev_distance = math.sqrt(distance_variance)
 
         return std_dev_distance
     

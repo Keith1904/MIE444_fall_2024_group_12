@@ -1,7 +1,10 @@
+import math
 
 class Pathfinder:
     '''This class is responsible for determine the route for the robot to travel while avoiding obstacles. Also performs the block finding algorithm.'''
-   
+    def __init__(self, walls):
+        self.walls = walls
+    
     def find_furthest_distance(self, robot):
         # Get readings for all sensors
         sensor_ids = ['u0', 'u1', 'u2', 'u3', 'u4', 'u5']
@@ -24,3 +27,61 @@ class Pathfinder:
             furthest_direction = robot.distance_sensors[furthest_sensor_id]["rotation"]
         
         return furthest_distance, furthest_direction
+    
+
+    def get_turn_angle(self, current_location, current_location_radians, goal_location):
+        # Define directions and corresponding vectors
+        directions = ['east', 'south', 'west', 'north']
+        direction_vectors = {'north': (-1, 0), 'east': (0, 1), 'south': (1, 0), 'west': (0, -1)}
+        
+        # Normalize current_radian_direction to be between 0 and 2π
+        current_radian_direction = current_location_radians % (2 * math.pi)
+        
+        # Convert inches to cell coordinates
+        current_location = (current_location[0] // 12, current_location[1] // 12)
+        
+        # Convert the normalized radian direction to one of the four compass directions
+        direction_index = int((current_radian_direction + math.pi / 4) // (math.pi / 2)) % 4
+        current_direction = directions[direction_index]
+        
+        # Calculate row and column differences between current and goal locations
+        row_diff = goal_location[0] - current_location[0]
+        col_diff = goal_location[1] - current_location[1]
+        
+        # Determine potential directions towards the goal
+        if abs(row_diff) > abs(col_diff):
+            primary_direction = 'south' if row_diff > 0 else 'north'
+        else:
+            primary_direction = 'east' if col_diff > 0 else 'west'
+        
+        # Define directions to check, ordered by closeness to the goal
+        possible_directions = [primary_direction]
+        if primary_direction in ['north', 'south']:
+            possible_directions.append('east' if col_diff > 0 else 'west')
+        else:
+            possible_directions.append('south' if row_diff > 0 else 'north')
+        
+        # Check for obstacles and select a valid direction
+        for direction in possible_directions:
+            dx, dy = direction_vectors[direction]
+            new_row = current_location[0] + dx
+            new_col = current_location[1] + dy
+            # Ensure the new location is within bounds and not an obstacle
+            if 0 <= new_row < len(self.walls) and 0 <= new_col < len(self.walls[0]) and self.walls[new_row][new_col] != 0:
+                desired_direction = direction
+                break
+        else:
+            # If no valid primary/secondary direction found, keep the current direction
+            desired_direction = current_direction
+        
+        # Calculate angle to turn based on the current and desired directions
+        current_index = directions.index(current_direction)
+        desired_index = directions.index(desired_direction)
+        angle_diff = (desired_index - current_index) * 90
+        
+        # Ensure angle is between -270 and 270
+        angle = (angle_diff + 360) % 360  # Adjust to positive angle
+        if angle > 180:
+            angle -= 360  # Adjust to negative if greater than 180
+        
+        return angle

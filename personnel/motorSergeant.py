@@ -57,12 +57,12 @@ class MotorSergeant:
                     self.drive(-0.5)
                     self.reset = True
                     break
-            elif 2 < reading < 5:
-                if sensor_id == "u4" and reading > distance_sensors_copy['u1']['reading']:
+            elif 2 < reading < 6:
+                if sensor_id == "u4" and reading + 0.2 > distance_sensors_copy['u1']['reading']:
                     #self.drive(-0.5)
                     self.rotate(5)
                     break
-                elif sensor_id == "u5" and reading > distance_sensors_copy['u3']['reading']:
+                elif sensor_id == "u5" and reading + 0.2 > distance_sensors_copy['u3']['reading']:
                     #self.drive(-0.5)              
                     self.rotate(-5)
                     break
