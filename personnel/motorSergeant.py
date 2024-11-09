@@ -11,16 +11,13 @@ class MotorSergeant:
         
     def drive(self, distance):
         print(f"Driving this distance: {distance}")
-        self.stop()
         self.radioOperator.broadcast("w0:" + str(distance))
 
     def rotate(self, angle):
         print(f"Rotating this angle: {angle}")
-        self.stop()
         self.radioOperator.broadcast("r0:" + str(angle))
 
     def issue_command(self, cmd):
-        self.stop()
         self.radioOperator.broadcast(cmd)
 
     def stop(self):
