@@ -132,7 +132,6 @@ class Scout:
 
         # Check if total_weight is zero and normalize
         stdev = self.position_standard_deviation()
-        print(f"stdev: {stdev}")
         if stdev < 2:
             self.localized = True
             print("localized!")

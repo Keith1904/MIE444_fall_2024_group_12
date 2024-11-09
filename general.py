@@ -34,14 +34,14 @@ class General:
             TRANSMIT_PAUSE=SETTINGS.TRANSMIT_PAUSE
             )
         self.pathfinder = Pathfinder(SETTINGS.walls)
-        self.scout = Scout(2500, self.MAZE, self.robot)
+        self.scout = Scout(5000, self.MAZE, self.robot)
         self.motorSergeant = MotorSergeant(self.radioOperator)
         self.recon = Recon()
         time.sleep(3)
         self.mode = "auto"
         self.last_input = ''
         self.objective = "lz"
-        self.dropoff_point = (2, 2)
+        self.dropoff_point = (7, 3)
         
         
     def execute_mission(self):
@@ -56,34 +56,33 @@ class General:
                     print("resetting")
                     if self.scout.localized:
                         if self.objective == "lz":
-                            ("Heading to lz!")
+                            print("Heading to lz!")
                             direction = self.pathfinder.get_turn_angle((self.scout.average_x, self.scout.average_y), self.scout.average_theta, (0, 0))
                         elif self.objective == "dp":
+                            print("Heading to dp!")
                             direction = self.pathfinder.get_turn_angle((self.scout.average_x, self.scout.average_y), self.scout.average_theta, self.dropoff_point)
                     else: 
                         distance, direction = self.pathfinder.find_furthest_distance(self.robot)
-                    self.motorSergeant.drive(1)
-                    time.sleep(1)
+                    #self.motorSergeant.drive(1)
+                    #time.sleep(1)
                     self.motorSergeant.rotate(direction)
-                    time.sleep(1)
                     self.motorSergeant.reset = False
                     self.motorSergeant.reset_cooldown = 3
                 else:
-                    self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5'], self.radioOperator)
+                    self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
                     self.motorSergeant.adjust(self.robot)
-                    time.sleep(1)
-                self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
                 self.scout.predict()
                 self.scout.update_weights(self.MAZE, self.robot, sigma = 0.4)
                 neff = self.scout.compute_neff()
-                if neff < 500:
+                if neff < 2500:
                     print("resampling!")
                     self.scout.resample()
                 self.scout.weighted_average()
+                self.update_objective()
                 if not self.motorSergeant.reset:
-                    self.motorSergeant.drive(2)
-                    self.motorSergeant.reset_cooldown -= 1
+                    self.motorSergeant.drive(3)
                     time.sleep(1)
+                    self.motorSergeant.reset_cooldown -= 1
         if self.mode == 'manual':
             self.update_maze()
             self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
@@ -101,7 +100,7 @@ class General:
                 self.scout.predict()
                 self.scout.update_weights(self.MAZE, self.robot, sigma = 0.2)
                 neff = self.scout.compute_neff()
-                if neff < 1250:
+                if neff < 2500:
                     print("resampling!")
                     self.scout.resample()
                     
@@ -214,6 +213,10 @@ class General:
                if current_location == (0, 0) or current_location == (0, 1) or current_location == (1, 0) or current_location == (1, 1):
                    print("Arrived at loading zone!")
                    self.objective = "dp"
+            if self.objective == "dp":
+                if current_location == self.dropoff_point:
+                    print("Arrived at dropoff point!")
+                    exit()
     
         
         
