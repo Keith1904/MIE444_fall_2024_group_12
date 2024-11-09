@@ -54,7 +54,7 @@ class General:
                 self.update_maze()
                 if self.motorSergeant.reset:
                     print("resetting")
-                    if False:
+                    if self.scout.localized:
                         if self.objective == "lz":
                             ("Heading to lz!")
                             direction = self.pathfinder.get_turn_angle((self.scout.average_x, self.scout.average_y), self.scout.average_theta, (0, 0))
@@ -63,6 +63,7 @@ class General:
                     else: 
                         distance, direction = self.pathfinder.find_furthest_distance(self.robot)
                     self.motorSergeant.drive(1)
+                    time.sleep(1)
                     self.motorSergeant.rotate(direction)
                     time.sleep(1)
                     self.motorSergeant.reset = False

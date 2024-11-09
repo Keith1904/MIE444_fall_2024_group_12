@@ -51,7 +51,7 @@ class MotorSergeant:
                     self.rotate(5)
                     break
                 if sensor_id == "u0":
-                    self.drive(-0.5)
+                    self.drive(-2)
                     self.reset = True
                     break
             elif 2 < reading < 6:
