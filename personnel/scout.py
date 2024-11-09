@@ -198,7 +198,7 @@ class Scout:
         Create a deep copy of a particle.
         Adjust this function based on the actual attributes of your particle.
         """
-        return Particle(particle.x, particle.y, particle.theta, particle.weight)  # Modify as per your Particle class
+        return Particle(particle.x, particle.y, particle.theta, particle.weight)
 
     def compute_neff(self):
         """
@@ -238,18 +238,6 @@ class Scout:
         self.average_x = weighted_x
         self.average_y = weighted_y
         self.average_theta = weighted_theta
-
-    def calculate_entropy(self):
-        epsilon = 1e-6
-        weights = [particle.weight for particle in self.particles]
-        # Normalize weights
-        total_weight = sum(weights)
-        normalized_weights = [w / (total_weight + epsilon) for w in weights]
-        
-        # Calculate entropy
-        entropy = -sum(w * math.log(w + epsilon) for w in normalized_weights)
-        print(f"entropy: {entropy}")
-        return entropy
 
     def position_standard_deviation(self):
 
