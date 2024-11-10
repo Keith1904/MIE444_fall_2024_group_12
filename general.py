@@ -70,13 +70,15 @@ class General:
                     self.motorSergeant.reset_cooldown = 3
                 else:
                     self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
-                    self.motorSergeant.adjust(self.robot)
+                    self.motorSergeant.adjust(self.robot, self.scout.localized)
+                print(time.time())
                 self.scout.predict()
                 self.scout.update_weights(self.MAZE, self.robot, sigma = 0.4)
                 neff = self.scout.compute_neff()
                 if neff < 2500:
                     print("resampling!")
                     self.scout.resample()
+                print(time.time())
                 self.scout.weighted_average()
                 self.update_objective()
                 if not self.motorSergeant.reset:

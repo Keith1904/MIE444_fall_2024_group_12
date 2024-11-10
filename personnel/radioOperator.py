@@ -39,15 +39,18 @@ class RadioOperator:
         except serial.SerialException:
             print(f'Serial connection was refused.\nEnsure {PORT_SERIAL} is the correct port and nothing else is connected to it.')
             
-    def broadcast(self, data):
+    def broadcast(self, data, response = False):
         while self.line_busy:
             time.sleep(0.1)
         self.line_busy = True
         packet_tx = self.packetize(data)
         self.transmit(packet_tx)
-        response =  self.receive()
+        if response:
+            response =  self.receive()
+            self.line_busy = False
+            return response
         self.line_busy = False
-        return response
+        
  
     # Wrapper functions
     def transmit(self, data):

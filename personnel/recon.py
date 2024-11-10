@@ -3,10 +3,10 @@ class Recon:
     '''This class collects data from sensors and relays it to scout and pathfinder.'''
         
     def check_sensors(self, robot, sensor_ids, radioOperator, window_size=1):
-        readings, time_rx = radioOperator.broadcast(",".join(sensor_ids))
+        readings, time_rx = radioOperator.broadcast(",".join(sensor_ids), response = True)
         while True:
             if len(readings) != len(sensor_ids):
-                readings, time_rx = radioOperator.broadcast(",".join(sensor_ids))
+                readings, time_rx = radioOperator.broadcast(",".join(sensor_ids), response = True)
                 time.sleep(0.5)
             else:
                 break

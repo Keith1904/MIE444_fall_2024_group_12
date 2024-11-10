@@ -33,7 +33,7 @@ class MotorSergeant:
             return True
         return False
     
-    def adjust(self, robot):
+    def adjust(self, robot, localized):
         distance_sensors_copy = robot.distance_sensors.copy()
         motor_encoders_copy = robot.motor_encoders.copy()
         for sensor_id, sensor_data in distance_sensors_copy.items():
@@ -63,6 +63,11 @@ class MotorSergeant:
                     #self.drive(-0.5)              
                     self.rotate(-5)
                     break
+            elif reading > 10 and sensor_id == "u1" or sensor_id == "u3":
+                if ((distance_sensors_copy["u1"]["reading"] > 10 and distance_sensors_copy["u4"]["reading"] > 10) or (distance_sensors_copy["u3"]["reading"] > 10 and distance_sensors_copy["u5"]["reading"] > 10)) and localized and self.reset_cooldown <= 0:
+                    self.reset = True
+                    break
+                
             elif reading > distance_sensors_copy["u0"]["reading"] + 8 and self.reset_cooldown <= 0:
                 if distance_sensors_copy["u1"]["reading"] > distance_sensors_copy["u0"]["reading"] + 8 and distance_sensors_copy["u4"]["reading"] > distance_sensors_copy["u0"]["reading"] + 8 or distance_sensors_copy["u3"]["reading"] > distance_sensors_copy["u0"]["reading"] + 8 and distance_sensors_copy["u5"]["reading"] > distance_sensors_copy["u0"]["reading"] + 8:
                     self.reset = True
