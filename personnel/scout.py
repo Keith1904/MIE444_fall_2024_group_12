@@ -105,7 +105,7 @@ class Scout:
         """
         total_weight = 0.0
 
-        sensor_ids = ["u0", "u1", "u2", "u3", "u4", "u5"]
+        sensor_ids = ["u1", "u3", "u4", "u5"]
         for particle in self.particles:
             # Initialize the weight of this particle
             particle.weight = 1.0

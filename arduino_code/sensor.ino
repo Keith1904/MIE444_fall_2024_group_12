@@ -107,14 +107,13 @@ void setup() {
 
 void loop() {
   Receive_Data();
-  delay(100);
+  delay(25);
   if(Receive_Com[0] == 'x')
   {
     ArdSerial.write("[M1:0,M2:0]");
     Receive_Com[0] = '\0';
   }
   Receive_Com[0] = '\0';
-  //delay(5000);
 }
 
 void DCM1_Enc_Update() {
@@ -255,6 +254,7 @@ void Com_Type() {
   else if(Receive_Com[0] == 'w' || Receive_Com[0] == 'r')
   {
     Process_Drive_Com();
+    Serial.println("[COMMAND RECEIVED]");
   }
   else if(Receive_Com[0] == 'x')
   {

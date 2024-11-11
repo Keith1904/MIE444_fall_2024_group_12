@@ -34,7 +34,7 @@ class General:
             TRANSMIT_PAUSE=SETTINGS.TRANSMIT_PAUSE
             )
         self.pathfinder = Pathfinder(SETTINGS.walls)
-        self.scout = Scout(5000, self.MAZE, self.robot)
+        self.scout = Scout(2500, self.MAZE, self.robot)
         self.motorSergeant = MotorSergeant(self.radioOperator)
         self.recon = Recon()
         time.sleep(3)
@@ -54,7 +54,7 @@ class General:
                 self.update_maze()
                 if self.motorSergeant.reset:
                     print("resetting")
-                    if self.scout.localized:
+                    if False:
                         if self.objective == "lz":
                             print("Heading to lz!")
                             direction = self.pathfinder.get_turn_angle((self.scout.average_x, self.scout.average_y), self.scout.average_theta, (0, 0))
@@ -75,7 +75,7 @@ class General:
                 self.scout.predict()
                 self.scout.update_weights(self.MAZE, self.robot, sigma = 0.4)
                 neff = self.scout.compute_neff()
-                if neff < 2500:
+                if neff < 1250:
                     print("resampling!")
                     self.scout.resample()
                 print(time.time())
