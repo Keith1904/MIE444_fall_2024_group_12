@@ -11,15 +11,15 @@ class MotorSergeant:
         
     def drive(self, distance):
         print(f"Driving this distance: {distance}")
-        self.stop()
-        time.sleep(0.2)
-        self.radioOperator.broadcast("w0:" + str(distance))
+        response = ""
+        while not response:
+            response = self.radioOperator.broadcast("w0:" + str(distance), response = True)
 
     def rotate(self, angle):
         print(f"Rotating this angle: {angle}")
-        self.stop()
-        time.sleep(0.2)
-        self.radioOperator.broadcast("r0:" + str(angle))
+        response = ""
+        while not response:
+            response = self.radioOperator.broadcast("r0:" + str(angle), response = True)
 
     def issue_command(self, cmd):
         self.radioOperator.broadcast(cmd)

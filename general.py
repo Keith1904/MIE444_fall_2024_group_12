@@ -41,7 +41,7 @@ class General:
         self.mode = "auto"
         self.last_input = ''
         self.objective = "lz"
-        self.dropoff_point = (7, 3)
+        self.dropoff_point = (5, 0)
         
         
     def execute_mission(self):
@@ -51,35 +51,36 @@ class General:
             self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
             self.scout.update_weights(self.MAZE, self.robot, sigma = 0.2)
             while True:
-                self.update_maze()
                 if self.motorSergeant.reset:
                     print("resetting")
-                    if False:
+                    if self.scout.localized:
                         if self.objective == "lz":
                             print("Heading to lz!")
                             direction = self.pathfinder.get_turn_angle((self.scout.average_x, self.scout.average_y), self.scout.average_theta, (0, 0))
                         elif self.objective == "dp":
                             print("Heading to dp!")
                             direction = self.pathfinder.get_turn_angle((self.scout.average_x, self.scout.average_y), self.scout.average_theta, self.dropoff_point)
+                        if direction == None:
+                            distance, direction = self.pathfinder.find_furthest_distance(self.robot)
                     else: 
                         distance, direction = self.pathfinder.find_furthest_distance(self.robot)
-                    #self.motorSergeant.drive(1)
-                    #time.sleep(1)
+                    self.motorSergeant.drive(1)
+                    time.sleep(1)
                     self.motorSergeant.rotate(direction)
                     self.motorSergeant.reset = False
                     self.motorSergeant.reset_cooldown = 3
                 else:
                     self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
                     self.motorSergeant.adjust(self.robot, self.scout.localized)
-                print(time.time())
                 self.scout.predict()
                 self.scout.update_weights(self.MAZE, self.robot, sigma = 0.4)
                 neff = self.scout.compute_neff()
+                print(f"neff: {neff}")
                 if neff < 1250:
                     print("resampling!")
                     self.scout.resample()
-                print(time.time())
                 self.scout.weighted_average()
+                self.update_maze()
                 self.update_objective()
                 if not self.motorSergeant.reset:
                     self.motorSergeant.drive(3)
@@ -240,4 +241,3 @@ if __name__ == "__main__":
     np.random.seed(SETTINGS.floor_seed)
     general.initialize_maze()      
     general.execute_mission()
-    #print(general.pathfinder.get_turn_angle((86, 18), (-1.5), (0, 0)))
