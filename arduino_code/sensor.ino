@@ -1,7 +1,7 @@
 #include <SoftwareSerial.h>
 #include <math.h>
 #include <Wire.h>
-#include <Adafruit_VL53L0X.h>
+#include <VL53L0X.h>
 
 #define NUM_SENSORS 7
 #define _USE_MATH_DEFINES
@@ -17,7 +17,7 @@ int DCM1_EncB_Pin = 4;
 int DCM2_EncB_Pin = 5;
 
 // Ultrasonic Sensors Echo Pins
-Adafruit_VL53L0X ToF_Sensors[NUM_SENSORS];
+VL53L0X ToF_Sensors[NUM_SENSORS];
 int ToF_XSHUT_Pins[NUM_SENSORS] = {6, 7, 8, 9, A3, A1, 10}; // XSHUT pins for each sensor
 byte ToF_Addresses[NUM_SENSORS] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36}; // Unique I2C addresses
 
@@ -25,8 +25,8 @@ byte ToF_Addresses[NUM_SENSORS] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36}; //
 // int IR_Out_Pin = 11;
 
 // Actuation Arduino Serial Communication Pins
-int Ard_RX_Pin = A4;
-int Ard_TX_Pin = A5;
+int Ard_RX_Pin = 13;
+int Ard_TX_Pin = 12;
 
 // Definition of constants
 float V_Sound = 0.0135; //Velocity of sounds in in/us
@@ -56,7 +56,10 @@ int DCM2_Dir = 0;
 SoftwareSerial ArdSerial(Ard_RX_Pin, Ard_TX_Pin); //PINS ON SENSOR THAT SEND TO ACTUATION
 
 void setup() {
-  // put your setup code here, to run once:
+  
+  ArdSerial.begin(9600); //Start serial communication with actuation arduino
+  Serial.begin(9600); //Start serial communication with bluetooth module
+  Wire.begin(); //I2C communication
 
   // Define output and input pins
   
@@ -69,42 +72,23 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(DCM1_EncA_Pin), DCM1_Enc_Update, CHANGE); 
   attachInterrupt(digitalPinToInterrupt(DCM2_EncA_Pin), DCM2_Enc_Update, CHANGE); 
 
-  ArdSerial.begin(9600); //Start serial communication with actuation arduino
-  Serial.begin(9600); //Start serial communication with bluetooth module
-  Wire.begin(); //I2C communication
-
-  for (int i = 0; i < NUM_SENSORS; i++)
-  {
+  // Set up each ToF sensor
+  for (int i = 0; i < NUM_SENSORS; i++) {
     pinMode(ToF_XSHUT_Pins[i], OUTPUT);
     digitalWrite(ToF_XSHUT_Pins[i], LOW); // Turn off each sensor initially
   }
 
   // Initialize each sensor one by one
-  for (int i = 0; i < NUM_SENSORS; i++)
-  {
-    digitalWrite(ToF_XSHUT_Pins[i], HIGH); // Enable the sensor
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    digitalWrite(ToF_XSHUT_Pins[i], HIGH); // Power on sensor
     delay(10); // Wait for the sensor to power up
 
-    // Initialize sensor with default address
-    if (!ToF_Sensors[i].begin())
-    {
-      Serial.print("Failed to initialize VL53L0X sensor ");
-      Serial.println(i);
-      while (1); // Stop if initialization fails
-    }
-
-    // Serial.print("Sensor ");
-    // Serial.print(i);
-    // Serial.print(" initialized at address 0x");
-    // Serial.println(sensorAddresses[i], HEX);
-    
-    ToF_Sensors[i].setAddress(ToF_Addresses[i]); //Assign address
-    digitalWrite(ToF_XSHUT_Pins[i], HIGH); //Set sensor to LOW again
+    ToF_Sensors[i].init(); // Initialize sensor with default address
+    ToF_Sensors[i].setAddress(ToF_Addresses[i]); // Assign unique address to sensor
   }
 
   // After initialization, re-enable all sensors
-  for (int i = 0; i < NUM_SENSORS; i++)
-  {
+  for (int i = 0; i < NUM_SENSORS; i++) {
     digitalWrite(ToF_XSHUT_Pins[i], HIGH);
   }
 
@@ -329,7 +313,6 @@ void Process_Drive_Com()
 
 void Process_Sensor_Com()
 {
-  VL53L0X_RangingMeasurementData_t ToF_Data;
   String result = "[";
   char *token = strtok(Receive_Com, ","); // Split Receive_com by delimiter (commas)
 
@@ -338,62 +321,27 @@ void Process_Sensor_Com()
     String tokenStr = String(token);
     float output = 0;
 
-    if (tokenStr == "u0")
-    {
-      while (output == 0)
-      {
-        ToF_Sensors[0].rangingTest(&ToF_Data, false);
-        output = ToF_Data.RangeMilliMeter;
-      }
-    }
-    else if (tokenStr == "u1")
-    {
-      while (output == 0)
-      {
-        ToF_Sensors[1].rangingTest(&ToF_Data, false);
-        output = ToF_Data.RangeMilliMeter;
-      }
-    }
-    else if (tokenStr == "u2")
-    {
-      while (output == 0)
-      {
-        ToF_Sensors[2].rangingTest(&ToF_Data, false);
-        output = ToF_Data.RangeMilliMeter;
-      }
-    }
-    else if (tokenStr == "u3")
-    {
-      while (output == 0)
-      {
-        ToF_Sensors[3].rangingTest(&ToF_Data, false);
-        output = ToF_Data.RangeMilliMeter;
-      }
-    }
-    else if (tokenStr == "u4")
-    {
-      while (output == 0)
-      {
-        ToF_Sensors[4].rangingTest(&ToF_Data, false);
-        output = ToF_Data.RangeMilliMeter;
-      }
-    }
-    else if (tokenStr == "u5")
-    {
-      while (output == 0)
-      {
-        ToF_Sensors[5].rangingTest(&ToF_Data, false);
-        output = ToF_Data.RangeMilliMeter;
-      }
-    }
-    else if (tokenStr == "u6")
-    {
-      while (output == 0)
-      {
-        ToF_Sensors[6].rangingTest(&ToF_Data, false);
-        output = ToF_Data.RangeMilliMeter;
-      }
-    }
+    if (tokenStr == "u0") {
+      output = ToF_Sensors[0].readRangeSingleMillimeters();
+    } 
+    else if (tokenStr == "u1") {
+      output = ToF_Sensors[1].readRangeSingleMillimeters();
+    } 
+    else if (tokenStr == "u2") {
+      output = ToF_Sensors[2].readRangeSingleMillimeters();
+    } 
+    else if (tokenStr == "u3") {
+      output = ToF_Sensors[3].readRangeSingleMillimeters();
+    } 
+    else if (tokenStr == "u4") {
+      output = ToF_Sensors[4].readRangeSingleMillimeters();
+    } 
+    else if (tokenStr == "u5") {
+      output = ToF_Sensors[5].readRangeSingleMillimeters();
+    } 
+    else if (tokenStr == "u6") {
+      output = ToF_Sensors[6].readRangeSingleMillimeters();
+    } 
     else if (tokenStr == "m0")
     {
       output = M2_Check();
