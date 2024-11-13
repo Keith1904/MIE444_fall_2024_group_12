@@ -6,6 +6,61 @@
 #define NUM_SENSORS 7
 #define _USE_MATH_DEFINES
 
+#include <LiquidCrystal_I2C.h>
+
+// Initialize the LCD (address 0x27) for a 16x2 display
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// Add a global variable to track the last command received
+char lastReceiveCom[32] = ""; // To store the last command received
+
+
+
+// Define custom LCD characters 
+byte circleTopLeft[8] = {
+  B00111,
+  B01100,
+  B01000,
+  B01000,
+  B01000,
+  B01000,
+  B01100,
+  B00111
+};
+
+byte circleTopRight[8] = {
+  B11100,
+  B00110,
+  B00010,
+  B00010,
+  B00010,
+  B00010,
+  B00110,
+  B11100
+};
+
+byte arrowRight[8] = {
+  B00000,
+  B00100,
+  B00110,
+  B11111,
+  B00110,
+  B00100,
+  B00000,
+  B00000
+};
+
+byte arrowLeft[8] = { 
+  B00000,
+  B00100,
+  B01100,
+  B11111,
+  B01100,
+  B00100,
+  B00000,
+  B00000
+};
+
 // Bluetooth Serial Communication Pins
 //int BT_RX_Pin = 0;
 //int BT_TX_Pin = 1;
@@ -16,7 +71,7 @@ int DCM2_EncA_Pin = 2;
 int DCM1_EncB_Pin = 4;
 int DCM2_EncB_Pin = 5;
 
-// Ultrasonic Sensors Echo Pins
+// TOFs Pins
 VL53L0X ToF_Sensors[NUM_SENSORS];
 int ToF_XSHUT_Pins[NUM_SENSORS] = {6, 7, 8, 9, A3, A1, 10}; // XSHUT pins for each sensor
 byte ToF_Addresses[NUM_SENSORS] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36}; // Unique I2C addresses
@@ -59,7 +114,7 @@ void setup() {
   
   ArdSerial.begin(9600); //Start serial communication with actuation arduino
   Serial.begin(9600); //Start serial communication with bluetooth module
-  Wire.begin(); //I2C communication
+  //Wire.begin(); //I2C communication
 
   // Define output and input pins
   
@@ -94,6 +149,18 @@ void setup() {
 
   ArdSerial.write("[M1:0,M2:0]");
   Receive_Com[0] = '\0';
+
+  //LCD Setup 
+  Wire.begin();
+  Wire.setClock(50000);  // Set I2C speed to 50kHz
+  //lcd.begin();
+  lcd.backlight();
+  lcd.print("Hello!");
+  //lcd.clear();
+  lcd.createChar(0, circleTopLeft);
+  lcd.createChar(1, circleTopRight);
+  lcd.createChar(2, arrowRight);
+  lcd.createChar(3, arrowLeft);
 }
 
 void loop()
@@ -106,6 +173,12 @@ void loop()
     Receive_Com[0] = '\0';
   }
   Receive_Com[0] = '\0';
+
+  // Update LCD only if there's new data in Receive_Com
+  LCD_UpdateIfNewData();
+
+  Receive_Com[0] = '\0';
+  //delay(5000);
 }
 
 void DCM1_Enc_Update()
@@ -372,4 +445,89 @@ float M1_Check()
 float M2_Check()
 {
   return DCM2_Enc_Count * Dist_Per_Pulse_M2;
+}
+
+// Function to handle LCD display logic based on Receive_Com
+void LCD_Display() {
+  lcd.clear();
+
+  // Check if the command is for "r" (arrow display)
+  if (Receive_Com[0] == 'r') {
+    if (Receive_Com[3] == '-') {
+      // Display arrow bending right (this is ccw)
+      
+      for (int i=0 ; i<15 ; i=i+3){
+        lcd.setCursor(i, 0); // Set cursor to the first character of the top row for the circle
+        lcd.write(byte(0));  // Top-left of the circle
+        lcd.write(byte(2));  // Arrow right
+        lcd.write(byte(1));  // Bottom-right of the circle
+        delay(200);   
+        }
+
+      
+    } else {
+      // Display arrow bending left (this is cw)
+
+      for (int i=16 ; i>=0 ; i=i-3){
+        lcd.setCursor(i, 0); // Set cursor to the first character of the top row for the circle
+        lcd.write(byte(0));  // Top-left of the circle
+        lcd.write(byte(3));  // Arrow left
+        lcd.write(byte(1));  // Bottom-right of the circle
+        delay(200);   
+        }
+      // lcd.setCursor(6, 0); // Set cursor to the first character of the top row for the circle
+      // lcd.write(byte(0));  // Top-left of the circle
+      // lcd.write(byte(3));  // Arrow left
+      // lcd.write(byte(1));  // Bottom-right of the circle
+      // delay(200);   
+
+      // lcd.setCursor(0, 0);
+      // lcd.createChar(0, cw_customChar);
+      // lcd.home();
+      // lcd.write(0);
+
+    }
+  }
+  // Check if the command is for "w" (display specific patterns)
+  else if (Receive_Com[0] == 'w') {
+    if (Receive_Com[3] != '-') {
+      // goes forward, dispay arrows going forward
+      for (int i = 0; i < 16; i++) {
+        lcd.setCursor(i, 0);   // Move cursor to the next block in the first row
+        lcd.print(">");        // Print a character (e.g., "*") to "light up" the block
+        delay(200);            // Adjust delay for speed (200ms between each block)
+        
+    }
+    } else {
+      // goes backward, display arrows going back
+      for (int i = 16; i >= 0; i--) {
+        lcd.setCursor(i, 0);   // Move cursor to the next block in the first row
+        lcd.print("<");        // Print a character (e.g., "*") to "light up" the block
+        delay(200);            // Adjust delay for speed (200ms between each block)
+        
+    }
+    }
+
+  // else {
+    
+  //   if (Receive_Com[0] == 'L') {
+  //     lcd.print("Arrived at Loading Zone!");
+  //   }
+
+  //   slse if (Receive_Com[0] == 'L') {
+  //     lcd.print("Arrived at Delivery Zone!");
+  //   }
+  // }
+  
+  }
+}
+
+void LCD_UpdateIfNewData() {
+  // Check if the current command is different from the last one
+  if (strcmp(Receive_Com, lastReceiveCom) != 0) {
+    // Update lastReceiveCom to the current command
+    strcpy(lastReceiveCom, Receive_Com);
+    // Call LCD_Display function only if there is new data
+    LCD_Display();
+  }
 }
