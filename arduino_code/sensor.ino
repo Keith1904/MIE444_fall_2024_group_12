@@ -37,8 +37,8 @@ float Dist_Per_Pulse_M1 = 0.015; //Distance travelled per encoder pulse in inche
 float Dist_Per_Pulse_M2 = 0.015; //Distance travelled per encoder pulse in inches for M2
 float Wheel_Dist = 7.25; //wheel to wheel distance in inches
 //int Motor_Speed = 50; //motor speed
-float M1_Dist = 0;
-float M2_Dist = 0;
+int DCM1_Dir = 0;
+int DCM2_Dir = 0;
 
 // Array to store US/DRIVE command
 const byte Num_Char = 32; //Size of byte array
@@ -95,7 +95,7 @@ void setup() {
     delay(10); // Wait for the sensor to power up
 
     // Initialize sensor with default address
-    if (!sensors[i].begin(0x29, false, &Wire))
+    if (!ToF_Sensors[i].begin())
     {
       Serial.print("Failed to initialize VL53L0X sensor ");
       Serial.println(i);
@@ -421,7 +421,7 @@ void Process_Sensor_Com()
   // Remove the last comma and close the bracket
   result.remove(result.length() - 1);
   result += "]";
-  Receive_Com[0] = "\0";
+  Receive_Com[0] = '\0';
   Serial.println(result);
 }
 
