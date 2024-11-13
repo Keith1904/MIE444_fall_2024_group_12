@@ -53,15 +53,6 @@ int DCM2_Target = 0;
 int DCM1_Dir = 0;
 int DCM2_Dir = 0;
 
-// ToF results 
-float V0_Length = 0;
-float V1_Length = 0;
-float V2_Length = 0;
-float V3_Length = 0;
-float V4_Length = 0;
-float V5_Length = 0;
-float V6_Length = 0;
-
 SoftwareSerial ArdSerial(Ard_RX_Pin, Ard_TX_Pin); //PINS ON SENSOR THAT SEND TO ACTUATION
 
 void setup() {
