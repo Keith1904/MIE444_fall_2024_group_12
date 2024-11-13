@@ -10,7 +10,7 @@ int Ard_RX_Pin = 0;
 int Ard_TX_Pin = 1;
 
 // DC Motor Driver Control Pins
-int DCM1_ENB_Pin = 9;
+int DCM1_ENB_Pin = 11;
 int DCM1_IN4_Pin = 7;
 int DCM1_IN3_Pin = 6;
 int DCM2_IN2_Pin = 5;
@@ -19,7 +19,7 @@ int DCM2_ENA_Pin = 3;
 
 // Servo Motor Control Pin
 Servo servo;
-//int Servo_Control_Pin = 11;
+int Servo_Control_Pin = 9;
 
 // LCD Screen Control Pins
 int LCD_SDA_Pin = A4;
@@ -44,7 +44,8 @@ void setup() {
   pinMode(DCM2_IN1_Pin, OUTPUT);
   pinMode(DCM2_ENA_Pin, OUTPUT);
   
-  //servo.attach(Servo_Control_Pin);
+  servo.attach(Servo_Control_Pin);
+  servo.write(0);
   
   pinMode(LCD_SDA_Pin, OUTPUT);
   pinMode(LCD_SCL_Pin, OUTPUT);
@@ -72,7 +73,7 @@ bool Receive_Data() {
   while(Serial.available() > 0 && New_Data == false)
   {
     data = Serial.read();
-    //Serial.println(data);
+    Serial.println(data);
     if(Receive_Inpr == true)
     {
       if(data != Com_End)
