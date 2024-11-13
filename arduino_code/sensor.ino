@@ -37,8 +37,6 @@ float Dist_Per_Pulse_M1 = 0.015; //Distance travelled per encoder pulse in inche
 float Dist_Per_Pulse_M2 = 0.015; //Distance travelled per encoder pulse in inches for M2
 float Wheel_Dist = 7.25; //wheel to wheel distance in inches
 //int Motor_Speed = 50; //motor speed
-int DCM1_Dir = 0;
-int DCM2_Dir = 0;
 
 // Array to store US/DRIVE command
 const byte Num_Char = 32; //Size of byte array
@@ -52,6 +50,8 @@ int DCM1_Enc_Count = 0;
 int DCM2_Enc_Count = 0;
 int DCM1_Target = 0;
 int DCM2_Target = 0;
+int DCM1_Dir = 0;
+int DCM2_Dir = 0;
 
 // ToF results 
 float V0_Length = 0;
