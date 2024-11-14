@@ -221,7 +221,19 @@ class General:
                 if current_location == self.dropoff_point:
                     print("Arrived at dropoff point!")
                     self.radioOperator.broadcast("D0:00")
-                    exit()
+    
+    def block_detection(self):
+        self.motorSergeant.drive()
+        self.motorSergeant.rotate()
+        self.recon.check_sensors(self.robot, ['u1', 'u3', 'u4', 'u5'], self.radioOperator) # u6 for TOF block
+
+        #check if the block is in front of the robot
+        self.recon.check_sensors(self.robot, ['u1','u6'])
+        ##if self.robot.distance_sensors["u0"]{"reading"} > self.robot.distance_sensors["u5"]{"reading"}:
+
+
+
+
     
         
         
