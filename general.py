@@ -215,10 +215,12 @@ class General:
             if self.objective == "lz":
                if current_location == (0, 0) or current_location == (0, 1) or current_location == (1, 0) or current_location == (1, 1):
                    print("Arrived at loading zone!")
+                   self.radioOperator.broadcast("L0:00")
                    self.objective = "dp"
             if self.objective == "dp":
                 if current_location == self.dropoff_point:
                     print("Arrived at dropoff point!")
+                    self.radioOperator.broadcast("D0:00")
                     exit()
     
         
