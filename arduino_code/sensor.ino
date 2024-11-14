@@ -14,8 +14,6 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 // Add a global variable to track the last command received
 char lastReceiveCom[32] = ""; // To store the last command received
 
-
-
 // Define custom LCD characters 
 byte circleTopLeft[8] = {
   B00111,
@@ -72,9 +70,22 @@ int DCM1_EncB_Pin = 4;
 int DCM2_EncB_Pin = 5;
 
 // TOFs Pins
-VL53L0X ToF_Sensors[NUM_SENSORS];
-int ToF_XSHUT_Pins[NUM_SENSORS] = {6, 7, 8, 9, A3, A1, 10}; // XSHUT pins for each sensor
-byte ToF_Addresses[NUM_SENSORS] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36}; // Unique I2C addresses
+VL53L0X tof0;
+VL53L0X tof1;
+VL53L0X tof2;
+VL53L0X tof3;
+VL53L0X tof4;
+VL53L0X tof5;
+VL53L0X tof6;
+const uint8_t sensorAddresses[] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36};
+
+int XSHUT_PIN0 = 6;
+int XSHUT_PIN1 = 7;
+int XSHUT_PIN2 = 8;
+int XSHUT_PIN3 = 9;
+int XSHUT_PIN4 = A3;
+int XSHUT_PIN5 = A1;
+int XSHUT_PIN6 = 10; 
 
 // Infrared Output Pin
 // int IR_Out_Pin = 11;
@@ -114,7 +125,6 @@ void setup() {
   
   ArdSerial.begin(9600); //Start serial communication with actuation arduino
   Serial.begin(9600); //Start serial communication with bluetooth module
-  //Wire.begin(); //I2C communication
 
   // Define output and input pins
   
@@ -127,33 +137,111 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(DCM1_EncA_Pin), DCM1_Enc_Update, CHANGE); 
   attachInterrupt(digitalPinToInterrupt(DCM2_EncA_Pin), DCM2_Enc_Update, CHANGE); 
 
-  // Set up each ToF sensor
-  for (int i = 0; i < NUM_SENSORS; i++) {
-    pinMode(ToF_XSHUT_Pins[i], OUTPUT);
-    digitalWrite(ToF_XSHUT_Pins[i], LOW); // Turn off each sensor initially
-  }
+  pinMode(XSHUT_PIN0, OUTPUT);
+  pinMode(XSHUT_PIN1, OUTPUT);
+  pinMode(XSHUT_PIN2, OUTPUT);
+  pinMode(XSHUT_PIN3, OUTPUT);
+  pinMode(XSHUT_PIN4, OUTPUT);
+  pinMode(XSHUT_PIN5, OUTPUT);
+  pinMode(XSHUT_PIN6, OUTPUT);
 
-  // Initialize each sensor one by one
-  for (int i = 0; i < NUM_SENSORS; i++) {
-    digitalWrite(ToF_XSHUT_Pins[i], HIGH); // Power on sensor
-    delay(10); // Wait for the sensor to power up
+  // Start with the sensor enabled
+  digitalWrite(XSHUT_PIN1, LOW);
+  digitalWrite(XSHUT_PIN2, LOW);
+  digitalWrite(XSHUT_PIN3, LOW);
+  digitalWrite(XSHUT_PIN4, LOW);
+  digitalWrite(XSHUT_PIN5, LOW);
+  digitalWrite(XSHUT_PIN6, LOW);
+  digitalWrite(XSHUT_PIN0, HIGH);
+  delay(10);  // Allow sensor to power up
 
-    ToF_Sensors[i].init(); // Initialize sensor with default address
-    ToF_Sensors[i].setAddress(ToF_Addresses[i]); // Assign unique address to sensor
+  Serial.println("Starting TOF Sensor...");
+  
+  Wire.begin();
+  Wire.setClock(50000);
+  
+  if (!tof0.init()) {
+    Serial.println("Failed to detect TOF0 sensor! Check wiring.");
+    while (1);
   }
+  tof0.setAddress(sensorAddresses[0]);
+  tof0.setTimeout(500);
+  Serial.println("TOF0 sensor initialized successfully.");
 
-  // After initialization, re-enable all sensors
-  for (int i = 0; i < NUM_SENSORS; i++) {
-    digitalWrite(ToF_XSHUT_Pins[i], HIGH);
+  digitalWrite(XSHUT_PIN1, HIGH);
+  delay(10);  // Allow sensor to power up
+
+  if (!tof1.init()) {
+    Serial.println("Failed to detect TOF1 sensor! Check wiring.");
+    while (1);
   }
+  tof1.setAddress(sensorAddresses[1]);
+  tof1.setTimeout(500);
+  Serial.println("TOF1 sensor initialized successfully.");
+
+  digitalWrite(XSHUT_PIN2, HIGH);
+  delay(10);  // Allow sensor to power up
+
+  if (!tof2.init()) {
+    Serial.println("Failed to detect TOF2 sensor! Check wiring.");
+    while (1);
+  }
+  tof2.setAddress(sensorAddresses[2]);
+  tof2.setTimeout(500);
+  Serial.println("TOF2 sensor initialized successfully.");
+
+  digitalWrite(XSHUT_PIN3, HIGH);
+  delay(10);  // Allow sensor to power up
+
+  if (!tof3.init()) {
+    Serial.println("Failed to detect TOF3 sensor! Check wiring.");
+    while (1);
+  }
+  tof3.setAddress(sensorAddresses[3]);
+  tof3.setTimeout(500);
+  Serial.println("TOF3 sensor initialized successfully.");
+
+  digitalWrite(XSHUT_PIN4, HIGH);
+  delay(10);  // Allow sensor to power up
+
+  if (!tof4.init()) {
+    Serial.println("Failed to detect TOF4 sensor! Check wiring.");
+    while (1);
+  }
+  tof4.setAddress(sensorAddresses[1]);
+  tof4.setTimeout(500);
+  Serial.println("TOF4 sensor initialized successfully.");
+
+  digitalWrite(XSHUT_PIN5, HIGH);
+  delay(10);  // Allow sensor to power up
+
+  if (!tof5.init()) {
+    Serial.println("Failed to detect TOF5 sensor! Check wiring.");
+    while (1);
+  }
+  tof5.setAddress(sensorAddresses[5]);
+  tof5.setTimeout(500);
+  Serial.println("TOF5 sensor initialized successfully.");
+
+  digitalWrite(XSHUT_PIN6, HIGH);
+  delay(10);  // Allow sensor to power up
+
+  if (!tof6.init()) {
+    Serial.println("Failed to detect TOF6 sensor! Check wiring.");
+    while (1);
+  }
+  tof6.setAddress(sensorAddresses[6]);
+  tof6.setTimeout(500);
+  Serial.println("TOF6 sensor initialized successfully.");
+
 
   ArdSerial.write("[M1:0,M2:0]");
   Receive_Com[0] = '\0';
 
   //LCD Setup 
-  Wire.begin();
-  Wire.setClock(50000);  // Set I2C speed to 50kHz
-  //lcd.begin();
+  //Wire.begin();
+  //Wire.setClock(50000);  // Set I2C speed to 50kHz
+  lcd.begin(16, 2);
   lcd.backlight();
   lcd.print("Hello!");
   //lcd.clear();
@@ -172,12 +260,12 @@ void loop()
     ArdSerial.write("[M1:0,M2:0]");
     Receive_Com[0] = '\0';
   }
+  LCD_Display();
   Receive_Com[0] = '\0';
 
   // Update LCD only if there's new data in Receive_Com
-  LCD_UpdateIfNewData();
-
-  Receive_Com[0] = '\0';
+  //LCD_UpdateIfNewData();
+  
   //delay(5000);
 }
 
@@ -309,6 +397,8 @@ void Receive_Data()
         Receive_Inpr = false;
         count = 0;
         New_Data = true;
+        Serial.print("Receive_Com in Receive_Data: ");
+        Serial.println(Receive_Com);
       }
     }
     else if (data == Com_Start)
@@ -316,7 +406,6 @@ void Receive_Data()
       Receive_Inpr = true;
     }
   }
-  // Serial.println(Receive_Com);
   Com_Type();
 }
 
@@ -352,6 +441,10 @@ void Com_Type()
     Process_Drive_Com();
     Serial.println("[COMMAND RECEIVED]");
   }
+  else if (Receive_Com[0] == 's')
+  {
+    Process_Servo_Com();
+  }
   else if (Receive_Com[0] == 'x')
   {
     ArdSerial.write("[M1:0,M2:0]");
@@ -377,15 +470,24 @@ void Process_Drive_Com()
     Rot_Pulse_Target();
     Send_Com();
   }
-  else if (Receive_Com[0] == 's')
-  {
-    Servo_Val = atof(Drive_Com);
-    ArdSerial.write("[S:%d]", &Servo_Val);
+}
+
+void Process_Servo_Com() {
+  char Drive_Com[strlen(Receive_Com) - 1];  // Adjust to safely hold the target values
+  for (int i = 0; i < strlen(Receive_Com) - 2; i++) {
+    Drive_Com[i] = Receive_Com[i + 2];
   }
+  Drive_Com[strlen(Receive_Com) - 2] = '\0'; // Add a null terminator
+
+  Drive_Val = atof(Drive_Com);  // Convert to a floating-point number
+  String servo_string = "[S:" + String(Drive_Val) + "]";
+  ArdSerial.write(servo_string.c_str());
 }
 
 void Process_Sensor_Com()
 {
+  Serial.print("Receive_Com in Process_Sensor_Com: ");
+  Serial.println(Receive_Com);
   String result = "[";
   char *token = strtok(Receive_Com, ","); // Split Receive_com by delimiter (commas)
 
@@ -395,25 +497,27 @@ void Process_Sensor_Com()
     float output = 0;
 
     if (tokenStr == "u0") {
-      output = ToF_Sensors[0].readRangeSingleMillimeters();
+      Serial.println("Within if statement");
+      output = tof0.readRangeSingleMillimeters();
+      Serial.println("Past if statement");
     } 
     else if (tokenStr == "u1") {
-      output = ToF_Sensors[1].readRangeSingleMillimeters();
+      output = tof1.readRangeSingleMillimeters();
     } 
     else if (tokenStr == "u2") {
-      output = ToF_Sensors[2].readRangeSingleMillimeters();
+      output = tof2.readRangeSingleMillimeters();
     } 
     else if (tokenStr == "u3") {
-      output = ToF_Sensors[3].readRangeSingleMillimeters();
+      output = tof3.readRangeSingleMillimeters();
     } 
     else if (tokenStr == "u4") {
-      output = ToF_Sensors[4].readRangeSingleMillimeters();
+      output = tof4.readRangeSingleMillimeters();
     } 
     else if (tokenStr == "u5") {
-      output = ToF_Sensors[5].readRangeSingleMillimeters();
+      output = tof5.readRangeSingleMillimeters();
     } 
     else if (tokenStr == "u6") {
-      output = ToF_Sensors[6].readRangeSingleMillimeters();
+      output = tof6.readRangeSingleMillimeters();
     } 
     else if (tokenStr == "m0")
     {
@@ -490,6 +594,7 @@ void LCD_Display() {
   }
   // Check if the command is for "w" (display specific patterns)
   else if (Receive_Com[0] == 'w') {
+    Serial.println("DRIVE");
     if (Receive_Com[3] != '-') {
       // goes forward, dispay arrows going forward
       for (int i = 0; i < 16; i++) {
@@ -522,12 +627,12 @@ void LCD_Display() {
   }
 }
 
-void LCD_UpdateIfNewData() {
-  // Check if the current command is different from the last one
-  if (strcmp(Receive_Com, lastReceiveCom) != 0) {
-    // Update lastReceiveCom to the current command
-    strcpy(lastReceiveCom, Receive_Com);
-    // Call LCD_Display function only if there is new data
-    LCD_Display();
-  }
-}
+// void LCD_UpdateIfNewData() {
+//   // Check if the current command is different from the last one
+//   if (strcmp(Receive_Com, lastReceiveCom) != 0) {
+//     // Update lastReceiveCom to the current command
+//     strcpy(lastReceiveCom, Receive_Com);
+//     // Call LCD_Display function only if there is new data
+//     LCD_Display();
+//   }
+// } 
