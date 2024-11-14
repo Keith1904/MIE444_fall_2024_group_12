@@ -19,11 +19,7 @@ int DCM2_ENA_Pin = 3;
 
 // Servo Motor Control Pin
 Servo servo;
-int Servo_Control_Pin = 9;
-
-// LCD Screen Control Pins
-int LCD_SDA_Pin = A4;
-int LCD_SCL_Pin = A5;
+int Servo_Control_Pin = 10;
 
 // Motor Speed
 int DCM1_Speed = 0;
@@ -45,10 +41,8 @@ void setup() {
   pinMode(DCM2_ENA_Pin, OUTPUT);
   
   servo.attach(Servo_Control_Pin);
-  servo.write(0);
+  servo.write(90);
   
-  pinMode(LCD_SDA_Pin, OUTPUT);
-  pinMode(LCD_SCL_Pin, OUTPUT);
   Serial.begin(9600); //Start serial communication with sensor arduino
 }
 
@@ -73,7 +67,7 @@ bool Receive_Data() {
   while(Serial.available() > 0 && New_Data == false)
   {
     data = Serial.read();
-    Serial.println(data);
+    //Serial.println(data);
     if(Receive_Inpr == true)
     {
       if(data != Com_End)
@@ -112,6 +106,16 @@ void Process_Com(char* Com) {
       //Serial.println(value);
       DCM_On(motorNumber, value);
     }
+    //for Servo commands
+    else if (segment[0] == 'S')
+    {
+      int angle;
+      if (sscanf(segment, "S:%d", &angle) == 1)
+      {
+        //Serial.println(angle);
+        Servo_Pos(angle);
+      }
+    }
 
     // Get the next segment
     segment = strtok(NULL, ",");
@@ -149,6 +153,23 @@ void DCM_On(int DCM, int SPEED) {
       digitalWrite(DCM2_IN1_Pin, HIGH);
       digitalWrite(DCM2_IN2_Pin, LOW);
       analogWrite(DCM2_ENA_Pin, abs(SPEED));
+    }
+  }
+}
+
+void Servo_Pos(int targetAngle) {
+  int currentAngle = servo.read();  // Read the current angle of the servo
+
+  // Determine the direction of movement and move the servo one degree at a time
+  if (targetAngle > currentAngle) {
+    for (int pos = currentAngle; pos <= targetAngle; pos++) {
+      servo.write(pos);
+      delay(15);  // Adjust delay as needed for smoother/faster motion
+    }
+  } else {
+    for (int pos = currentAngle; pos >= targetAngle; pos--) {
+      servo.write(pos);
+      delay(15);
     }
   }
 }
