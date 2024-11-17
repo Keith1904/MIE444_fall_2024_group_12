@@ -260,12 +260,12 @@ void loop()
     ArdSerial.write("[M1:0,M2:0]");
     Receive_Com[0] = '\0';
   }
-  LCD_Display();
-  Receive_Com[0] = '\0';
 
   // Update LCD only if there's new data in Receive_Com
-  //LCD_UpdateIfNewData();
-  
+  LCD_UpdateIfNewData();
+  //LCD_Display();
+
+  Receive_Com[0] = '\0'; 
   //delay(5000);
 }
 
@@ -580,21 +580,11 @@ void LCD_Display() {
         delay(200);   
         }
       // lcd.setCursor(6, 0); // Set cursor to the first character of the top row for the circle
-      // lcd.write(byte(0));  // Top-left of the circle
-      // lcd.write(byte(3));  // Arrow left
-      // lcd.write(byte(1));  // Bottom-right of the circle
-      // delay(200);   
-
-      // lcd.setCursor(0, 0);
-      // lcd.createChar(0, cw_customChar);
-      // lcd.home();
-      // lcd.write(0);
 
     }
   }
   // Check if the command is for "w" (display specific patterns)
   else if (Receive_Com[0] == 'w') {
-    Serial.println("DRIVE");
     if (Receive_Com[3] != '-') {
       // goes forward, dispay arrows going forward
       for (int i = 0; i < 16; i++) {
@@ -612,27 +602,24 @@ void LCD_Display() {
         
     }
     }
-
-  // else {
+  }  else {
     
-  //   if (Receive_Com[0] == 'L') {
-  //     lcd.print("Arrived at Loading Zone!");
-  //   }
+    if (Receive_Com[0] == 'L') {
+      lcd.print("Arrived at Loading Zone!");
+    }
 
-  //   slse if (Receive_Com[0] == 'L') {
-  //     lcd.print("Arrived at Delivery Zone!");
-  //   }
-  // }
-  
+    else if (Receive_Com[0] == 'D') {
+      lcd.print("Arrived at Delivery Zone!");
+    }
   }
-}
+ }
 
-// void LCD_UpdateIfNewData() {
-//   // Check if the current command is different from the last one
-//   if (strcmp(Receive_Com, lastReceiveCom) != 0) {
-//     // Update lastReceiveCom to the current command
-//     strcpy(lastReceiveCom, Receive_Com);
-//     // Call LCD_Display function only if there is new data
-//     LCD_Display();
-//   }
-// } 
+void LCD_UpdateIfNewData() {
+  // Check if the current command is different from the last one
+  if (strcmp(Receive_Com, lastReceiveCom) != 0) {
+    // Update lastReceiveCom to the current command
+    strcpy(lastReceiveCom, Receive_Com);
+    // Call LCD_Display function only if there is new data
+    LCD_Display();
+  }
+} 
