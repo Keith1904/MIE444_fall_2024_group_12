@@ -262,7 +262,7 @@ void loop()
   }
 
   // Update LCD only if there's new data in Receive_Com
-  //LCD_UpdateIfNewData();
+  LCD_UpdateIfNewData();
   //LCD_Display();
 
   Receive_Com[0] = '\0'; 
@@ -562,7 +562,7 @@ float M2_Check()
 }
 
 // Function to handle LCD display logic based on Receive_Com
-/*void LCD_Display() {
+void LCD_Display() {
   lcd.clear();
 
   // Check if the command is for "r" (arrow display)
@@ -570,26 +570,35 @@ float M2_Check()
     if (Receive_Com[3] == '-') {
       // Display arrow bending right (this is ccw)
       
-      for (int i=0 ; i<15 ; i=i+3){
-        lcd.setCursor(i, 0); // Set cursor to the first character of the top row for the circle
-        lcd.write(byte(0));  // Top-left of the circle
-        lcd.write(byte(2));  // Arrow right
-        lcd.write(byte(1));  // Bottom-right of the circle
-        delay(200);   
-        }
+      // for (int i=0 ; i<15 ; i=i+3){
+      //   lcd.setCursor(i, 0); // Set cursor to the first character of the top row for the circle
+      //   lcd.write(byte(0));  // Top-left of the circle
+      //   lcd.write(byte(2));  // Arrow right
+      //   lcd.write(byte(1));  // Bottom-right of the circle
+      //   delay(200);   
+      //   }
+      lcd.setCursor(6, 0); // Set cursor to the first character of the top row for the circle
+      lcd.write(byte(0));  // Top-left of the circle
+      lcd.write(byte(2));  // Arrow right
+      lcd.write(byte(1));  // Bottom-right of the circle
+      delay(200); 
 
       
     } else {
       // Display arrow bending left (this is cw)
 
-      for (int i=16 ; i>=0 ; i=i-3){
-        lcd.setCursor(i, 0); // Set cursor to the first character of the top row for the circle
-        lcd.write(byte(0));  // Top-left of the circle
-        lcd.write(byte(3));  // Arrow left
-        lcd.write(byte(1));  // Bottom-right of the circle
-        delay(200);   
-        }
-      // lcd.setCursor(6, 0); // Set cursor to the first character of the top row for the circle
+      // for (int i=16 ; i>=0 ; i=i-3){
+      //   lcd.setCursor(i, 0); // Set cursor to the first character of the top row for the circle
+      //   lcd.write(byte(0));  // Top-left of the circle
+      //   lcd.write(byte(3));  // Arrow left
+      //   lcd.write(byte(1));  // Bottom-right of the circle
+      //   delay(200);   
+      //   }
+      lcd.setCursor(6, 0); // Set cursor to the first character of the top row for the circle
+      lcd.write(byte(0));  // Top-left of the circle
+      lcd.write(byte(3));  // Arrow left
+      lcd.write(byte(1));  // Bottom-right of the circle
+      delay(200);   
 
     }
   }
@@ -597,20 +606,31 @@ float M2_Check()
   else if (Receive_Com[0] == 'w') {
     if (Receive_Com[3] != '-') {
       // goes forward, dispay arrows going forward
-      for (int i = 0; i < 16; i++) {
-        lcd.setCursor(i, 0);   // Move cursor to the next block in the first row
-        lcd.print(">");        // Print a character (e.g., "*") to "light up" the block
-        delay(200);            // Adjust delay for speed (200ms between each block)
+
+      lcd.setCursor(6, 0);   // Move cursor to the next block in the first row
+      lcd.print(">");        // Print a character (e.g., "*") to "light up" the block
+      delay(200);            // Adjust delay for speed (200ms between each block)
+      
+    //   for (int i = 0; i < 16; i++) {
+    //     lcd.setCursor(i, 0);   // Move cursor to the next block in the first row
+    //     lcd.print(">");        // Print a character (e.g., "*") to "light up" the block
+    //     delay(200);            // Adjust delay for speed (200ms between each block)
         
-    }
+    // }
     } else {
       // goes backward, display arrows going back
-      for (int i = 16; i >= 0; i--) {
-        lcd.setCursor(i, 0);   // Move cursor to the next block in the first row
-        lcd.print("<");        // Print a character (e.g., "*") to "light up" the block
-        delay(200);            // Adjust delay for speed (200ms between each block)
+      lcd.setCursor(6, 0);   // Move cursor to the next block in the first row
+      lcd.print("<");        // Print a character (e.g., "*") to "light up" the block
+      delay(200);            // Adjust delay for speed (200ms between each block)
+
+
+    //   for (int i = 16; i >= 0; i--) {
+    //     lcd.setCursor(i, 0);   // Move cursor to the next block in the first row
+    //     lcd.print("<");        // Print a character (e.g., "*") to "light up" the block
+    //     delay(200);            // Adjust delay for speed (200ms between each block)
         
-    }
+    // }
+
     }
   }  else {
     
@@ -632,4 +652,4 @@ void LCD_UpdateIfNewData() {
     // Call LCD_Display function only if there is new data
     LCD_Display();
   }
-} */
+} 

@@ -1,0 +1,608 @@
+#include <SoftwareSerial.h>
+#include <math.h>
+#define _USE_MATH_DEFINES
+
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+// Initialize the LCD (address 0x27) for a 16x2 display
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// Add a global variable to track the last command received
+char lastReceiveCom[Num_Char] = ""; // To store the last command received
+
+// Define custom LCD characters 
+byte circleTopLeft[8] = {
+  B00111,
+  B01100,
+  B01000,
+  B01000,
+  B01000,
+  B01000,
+  B01100,
+  B00111
+};
+
+byte circleTopRight[8] = {
+  B11100,
+  B00110,
+  B00010,
+  B00010,
+  B00010,
+  B00010,
+  B00110,
+  B11100
+};
+
+byte arrowRight[8] = {
+  B00000,
+  B00100,
+  B00110,
+  B11111,
+  B00110,
+  B00100,
+  B00000,
+  B00000
+};
+
+byte arrowLeft[8] = { 
+  B00000,
+  B00100,
+  B01100,
+  B11111,
+  B01100,
+  B00100,
+  B00000,
+  B00000
+};
+
+// Bluetooth Serial Communication Pins
+//int BT_RX_Pin = 0;
+//int BT_TX_Pin = 1;
+
+// DC Motor Encoder Outputs
+int DCM1_EncA_Pin = 3;
+int DCM2_EncA_Pin = 2;
+int DCM1_EncB_Pin = 4;
+int DCM2_EncB_Pin = 5;
+
+// Ultrasonic Sensors Echo Pins
+int U0_Echo_Pin = 6;
+int U1_Echo_Pin = 7;
+int U2_Echo_Pin = 8;
+int U3_Echo_Pin = 9;
+int U4_Echo_Pin = A3;
+int U5_Echo_Pin = A1;
+
+// Ultrasonic Sensors Trigger Pins
+int U0_Trig_Pin = 10;
+int U1_Trig_Pin = 10;
+int U2_Trig_Pin = 10;
+int U3_Trig_Pin = 10;
+int U4_Trig_Pin = A2;
+int U5_Trig_Pin = A0;
+
+// Infrared Output Pin
+int IR_Out_Pin = 11;
+
+// Time of Flight Output Pins
+int TofF_OutA_Pin = 12;
+int TofF_OutB_Pin = 13;
+
+// Actuation Arduino Serial Communication Pins
+int Ard_RX_Pin = A4;
+int Ard_TX_Pin = A5;
+
+// Definition of constants
+float V_Sound = 0.0135; //Velocity of sounds in in/us
+float Wheel_Dia = 2.55906; //Wheel diameter in inches
+int Enc_Res = 11; //Encoder pulses per full revolution
+int Gear_Ratio = 34; //DC motor gear ratio
+float Dist_Per_Pulse_M1 = 0.014; //Distance travelled per encoder pulse in inches for M1
+float Dist_Per_Pulse_M2 = 0.014; //Distance travelled per encoder pulse in inches for M2
+float Wheel_Dist = 7.25; //wheel to wheel distance in inches
+//int Motor_Speed = 50; //motor speed
+
+// Array to store US/DRIVE command
+const byte Num_Char = 32; //Size of byte array
+char Receive_Com[Num_Char]; //Character array to store commands WITHOUT BRACKETS
+float Drive_Val; //Store extracted drive command numerical value
+float Rotate_Val; //Store extracted rotate command numerical value
+
+// DC Motor Encoder Counts and Movement Tracking
+int DCM1_Enc_Count = 0;
+int DCM2_Enc_Count = 0;
+int DCM1_Target = 0;
+int DCM2_Target = 0;
+int DCM1_Dir = 0;
+int DCM2_Dir = 0;
+
+float pingTime;
+float U0_Length;
+float U1_Length;
+float U2_Length;
+float U3_Length;
+float U4_Length;
+float U5_Length;
+
+SoftwareSerial ArdSerial(Ard_RX_Pin, Ard_TX_Pin); //PINS ON SENSOR THAT SEND TO ACTUATION
+
+void setup() {
+  // put your setup code here, to run once:
+
+  // Define output and input pins
+  pinMode(DCM1_EncA_Pin, INPUT);
+  pinMode(DCM2_EncA_Pin, INPUT);
+  pinMode(DCM1_EncB_Pin, INPUT);
+  pinMode(DCM2_EncB_Pin, INPUT);
+
+  // initialize encoder interrupts
+  attachInterrupt(digitalPinToInterrupt(DCM1_EncA_Pin), DCM1_Enc_Update, CHANGE); 
+  attachInterrupt(digitalPinToInterrupt(DCM2_EncA_Pin), DCM2_Enc_Update, CHANGE); 
+
+  pinMode(U0_Echo_Pin, INPUT);
+  pinMode(U1_Echo_Pin, INPUT);
+  pinMode(U2_Echo_Pin, INPUT);
+  pinMode(U3_Echo_Pin, INPUT);
+  pinMode(U4_Echo_Pin, INPUT);
+  pinMode(U5_Echo_Pin, INPUT);
+  
+  pinMode(U0_Trig_Pin, OUTPUT);
+  pinMode(U1_Trig_Pin, OUTPUT);
+  pinMode(U2_Trig_Pin, OUTPUT);
+  pinMode(U3_Trig_Pin, OUTPUT);
+  pinMode(U4_Trig_Pin, OUTPUT);
+  pinMode(U5_Trig_Pin, OUTPUT);
+  
+  pinMode(IR_Out_Pin, INPUT);
+  
+  pinMode(TofF_OutA_Pin, INPUT);
+  pinMode(TofF_OutB_Pin, INPUT);
+
+  ArdSerial.begin(9600); //Start serial communication with actuation arduino
+  Serial.begin(9600); //Start serial communication with bluetooth module
+
+  ArdSerial.write("[M1:0,M2:0]");
+  Receive_Com[0] = '\0';
+
+  //LCD Setup 
+  lcd.begin();
+  lcd.backlight();
+  lcd.print("Hello!");
+}
+
+void loop() {
+  Receive_Data();
+  delay(100);
+  if(Receive_Com[0] == 'x')
+  {
+    ArdSerial.write("[M1:0,M2:0]");
+    Receive_Com[0] = '\0';
+  }
+  
+  //Call the LCD Display function 
+  //LCD_Display();
+
+  // Update LCD only if there's new data in Receive_Com
+  LCD_UpdateIfNewData();
+
+  Receive_Com[0] = '\0';
+  //delay(5000);
+}
+
+void DCM1_Enc_Update() {
+// updates DC motor 1 encoder value after interrupt
+  if (digitalRead(DCM1_EncA_Pin) == HIGH) {
+    if (digitalRead(DCM1_EncB_Pin) == LOW) {
+      DCM1_Enc_Count++;
+      DCM1_Target--;
+    } else {
+      DCM1_Enc_Count--;
+      DCM1_Target++;
+    }
+  } else {
+    if (digitalRead(DCM1_EncB_Pin) == LOW) {
+      DCM1_Enc_Count--;
+      DCM1_Target++;
+    } else {
+      DCM1_Enc_Count++;
+      DCM1_Target--;
+    }
+  }
+  //Serial.println(DCM1_Enc_Count);
+  //Serial.println(DCM1_Target);
+  if(DCM1_Target == 0) {
+    //Serial.println("M1 STOPPED");
+    ArdSerial.write("[M1:0,M2:0]"); // *** Needs to be updated when commands are finalized
+  }
+}
+
+void DCM2_Enc_Update() {
+// updates DC motor 2 encoder value after interrupt
+  if (digitalRead(DCM2_EncA_Pin) == HIGH) {
+    if (digitalRead(DCM2_EncB_Pin) == LOW) {
+      DCM2_Enc_Count++;
+      DCM2_Target--;
+    } else {
+      DCM2_Enc_Count--;
+      DCM2_Target++;
+    }
+  } else {
+    if (digitalRead(DCM2_EncB_Pin) == LOW) {
+      DCM2_Enc_Count--;
+      DCM2_Target++;
+    } else {
+      DCM2_Enc_Count++;
+      DCM2_Target--;
+    }
+  }
+  //Serial.println(DCM2_Enc_Count);
+  //Serial.println(DCM2_Target);
+  if(DCM2_Target == 0) {
+    //Serial.println("M2 STOPPED");
+    ArdSerial.write("[M1:0,M2:0]"); // *** Needs to be updated when commands are finalized
+  }
+}
+
+void Drive_Pulse_Target() {
+  DCM1_Target = int(Drive_Val/Dist_Per_Pulse_M1);
+  DCM2_Target = int(Drive_Val/Dist_Per_Pulse_M2);
+  if(DCM1_Target > 0) {
+    DCM1_Dir = 1;
+  }
+  else {
+    DCM1_Dir = -1;
+  }
+  if(DCM2_Target > 0) {
+    DCM2_Dir = 1;
+  }
+  else {
+    DCM2_Dir = -1;
+  }
+}
+
+void Rot_Pulse_Target() {
+  DCM1_Target = -int(((Rotate_Val*M_PI/180)*Wheel_Dist/2)/Dist_Per_Pulse_M1);
+  DCM2_Target = int(((Rotate_Val*M_PI/180)*Wheel_Dist/2)/Dist_Per_Pulse_M2);
+}
+
+void Receive_Data() {
+  char data;
+  byte count = 0;
+  bool Receive_Inpr = false;
+  bool New_Data = false;
+  char Com_Start = '['; // Command start character marker
+  char Com_End = ']';   // Command end character marker
+  while(Serial.available() > 0 && New_Data == false)
+  {
+    data = Serial.read();
+    if(Receive_Inpr == true)
+    {
+      if(data != Com_End)
+      {
+        Receive_Com[count] = data;
+        count++; 
+      }
+      else
+      {
+        Receive_Com[count] = '\0';
+        Receive_Inpr = false;
+        count = 0;
+        New_Data = true;
+      }
+    }
+    else if(data == Com_Start)
+    {
+      Receive_Inpr = true;
+    } 
+  } 
+  //Serial.println(Receive_Com);
+  Com_Type();
+}
+
+void Send_Com() {
+  //Serial.println("SENDING COM");
+  if(DCM1_Target > 0 && DCM2_Target > 0)
+  {
+    ArdSerial.write("[M1:200,M2:200]");
+  }
+  else if(DCM1_Target > 0 && DCM2_Target < 0)
+  {
+   ArdSerial.write("[M1:200,M2:-200]");
+  }
+  else if(DCM1_Target < 0 && DCM2_Target > 0)
+  {
+   ArdSerial.write("[M1:-200,M2:200]");
+  }
+  else if(DCM1_Target < 0 && DCM2_Target < 0)
+  {
+   ArdSerial.write("[M1:-200,M2:-200]");
+  }
+}
+
+void Com_Type() {
+  if(Receive_Com[0] == 'u' || Receive_Com[0] == 'm')
+  {
+    Process_Sensor_Com();
+  }
+  else if(Receive_Com[0] == 'w' || Receive_Com[0] == 'r')
+  {
+    Process_Drive_Com();
+  }
+  else if(Receive_Com[0] == 'x')
+  {
+    ArdSerial.write("[M1:0,M2:0]");
+  }
+  // else {
+  //   LCD_Display();
+  // }
+}
+
+void Process_Drive_Com() {
+  char Drive_Com[strlen(Receive_Com)-3];
+  for(int i=0; i<strlen(Receive_Com)-3; i++)
+  {
+    Drive_Com[i] = Receive_Com[i+3];
+  }
+  if(Receive_Com[0] == 'w')
+  {
+    Drive_Val = atof(Drive_Com);
+    Drive_Pulse_Target();
+    Send_Com();
+  }
+  else
+  {
+    Rotate_Val = atof(Drive_Com);
+    Rot_Pulse_Target();
+    Send_Com();
+  }
+}
+
+void Process_Sensor_Com() {
+    String result = "[";
+    char* token = strtok(Receive_Com, ",");  // Split Receive_com by delimiter (commas)
+
+    while (token != NULL) {
+        String tokenStr = String(token);
+        float output = 0;
+
+        if (tokenStr == "u0") {
+            while(output == 0) {
+              output = U0_Check();
+            }
+        } else if (tokenStr == "u1") {
+            while(output == 0) {
+              output = U1_Check();
+            }
+        } else if (tokenStr == "u2") {
+            while(output == 0) {
+              output = U2_Check();
+            }
+        } else if (tokenStr == "u3") {
+            while(output == 0) {
+              output = U3_Check();
+            }
+        } else if (tokenStr == "u4") {
+            while(output == 0) {
+              output = U4_Check();
+            }
+        } else if (tokenStr == "u5") {
+            while(output == 0) {
+              output = U5_Check();
+            }
+        }
+          else if (tokenStr == "m0") {
+            output = M2_Check();
+        }
+          else if (tokenStr == "m1") {
+            output = M1_Check();
+        }
+
+        // Append to result in proper format
+        result += tokenStr + ":" + String(output, 2) + ",";
+        
+        token = strtok(NULL, ",");  // Move to the next token
+    }
+
+    // Remove the last comma and close the bracket
+    result.remove(result.length() - 1);
+    result += "]";
+    Receive_Com[0] = "\0";
+    Serial.println(result);
+}
+
+float U0_Check() {
+// When called will check the forward ultrasonic sensor
+// returns a length float
+
+  digitalWrite(U0_Trig_Pin, LOW);   // resets trigger pin
+  delayMicroseconds(2000);          //adjustable delay
+  digitalWrite(U0_Trig_Pin, HIGH);  //trigger for 10 us
+  delayMicroseconds(10);
+  digitalWrite(U0_Trig_Pin, LOW);
+
+  pingTime = pulseIn(U0_Echo_Pin, HIGH);  // reads echo pin
+
+  U0_Length = pingTime * V_Sound * 0.5;  // U0 length in inches
+
+  return U0_Length;
+
+}
+
+float U1_Check() {
+// When called will check the right ultrasonic sensor
+// returns a length float
+
+  digitalWrite(U1_Trig_Pin, LOW);   // resets trigger pin
+  delayMicroseconds(2000);          //adjustable delay
+  digitalWrite(U1_Trig_Pin, HIGH);  //trigger for 10 us
+  delayMicroseconds(10);
+  digitalWrite(U1_Trig_Pin, LOW);
+
+  pingTime = pulseIn(U1_Echo_Pin, HIGH);  // reads echo pin
+
+  U1_Length = pingTime * V_Sound * 0.5;  // U1 length in inches
+
+  return U1_Length;
+
+}
+
+float U2_Check() {
+// When called will check the back ultrasonic sensor
+// returns a length float
+
+  digitalWrite(U2_Trig_Pin, LOW);   // resets trigger pin
+  delayMicroseconds(2000);          //adjustable delay
+  digitalWrite(U2_Trig_Pin, HIGH);  //trigger for 10 us
+  delayMicroseconds(10);
+  digitalWrite(U2_Trig_Pin, LOW);
+
+  pingTime = pulseIn(U2_Echo_Pin, HIGH);  // reads echo pin
+
+  U2_Length = pingTime * V_Sound * 0.5;  // U2 length in inches
+
+  return U2_Length;
+
+}
+
+float U3_Check() {
+// When called will check the left ultrasonic sensor
+// returns a length float
+
+  digitalWrite(U3_Trig_Pin, LOW);   // resets trigger pin
+  delayMicroseconds(2000);          //adjustable delay
+  digitalWrite(U3_Trig_Pin, HIGH);  //trigger for 10 us
+  delayMicroseconds(10);
+  digitalWrite(U3_Trig_Pin, LOW);
+
+  pingTime = pulseIn(U3_Echo_Pin, HIGH);  // reads echo pin
+
+  U3_Length = pingTime * V_Sound * 0.5;  // U3 length in inches
+
+  return U3_Length;
+
+}
+
+float U4_Check() {
+// When called will check the left ultrasonic sensor
+// returns a length float
+
+  digitalWrite(U4_Trig_Pin, LOW);   // resets trigger pin
+  delayMicroseconds(2000);          //adjustable delay
+  digitalWrite(U4_Trig_Pin, HIGH);  //trigger for 10 us
+  delayMicroseconds(10);
+  digitalWrite(U4_Trig_Pin, LOW);
+
+  pingTime = pulseIn(U4_Echo_Pin, HIGH);  // reads echo pin
+
+  U4_Length = pingTime * V_Sound * 0.5;  // U3 length in inches
+
+  return U4_Length;
+
+}
+
+float U5_Check() {
+// When called will check the left ultrasonic sensor
+// returns a length float
+
+  digitalWrite(U5_Trig_Pin, LOW);   // resets trigger pin
+  delayMicroseconds(2000);          //adjustable delay
+  digitalWrite(U5_Trig_Pin, HIGH);  //trigger for 10 us
+  delayMicroseconds(10);
+  digitalWrite(U5_Trig_Pin, LOW);
+
+  pingTime = pulseIn(U5_Echo_Pin, HIGH);  // reads echo pin
+
+  U5_Length = pingTime * V_Sound * 0.5;  // U3 length in inches
+
+  return U5_Length;
+
+}
+
+float M1_Check() {
+  return DCM1_Enc_Count * Dist_Per_Pulse_M1;
+}
+
+float M2_Check() {
+  return DCM2_Enc_Count * Dist_Per_Pulse_M2;
+}
+
+// Function to handle LCD display logic based on Receive_Com
+void LCD_Display() {
+  lcd.clear();
+
+  // Check if the command is for "r" (arrow display)
+  if (Receive_Com[0] == 'r') {
+    if (Receive_Com[3] == '-') {
+      // Display arrow bending right (this is ccw)
+      
+      for (int i=0 ; i<15 ; i=i+3){
+        lcd.setCursor(i, 0); // Set cursor to the first character of the top row for the circle
+        lcd.write(byte(0));  // Top-left of the circle
+        lcd.write(byte(2));  // Arrow right
+        lcd.write(byte(1));  // Bottom-right of the circle
+        millis(2000);   
+        }
+
+      
+    } else {
+      // Display arrow bending left (this is cw)
+
+      for (int i=16 ; i>=0 ; i=i-3){
+        lcd.setCursor(i, 0); // Set cursor to the first character of the top row for the circle
+        lcd.write(byte(0));  // Top-left of the circle
+        lcd.write(byte(3));  // Arrow left
+        lcd.write(byte(1));  // Bottom-right of the circle
+        millis(2000);   
+        }
+
+
+      // lcd.setCursor(0, 0);
+      // lcd.createChar(0, cw_customChar);
+      // lcd.home();
+      // lcd.write(0);
+
+    }
+  }
+  // Check if the command is for "w" (display specific patterns)
+  else if (Receive_Com[0] == 'w') {
+    if (Receive_Com[3] != '-') {
+      // goes forward, dispay arrows going forward
+      for (int i = 0; i < 16; i++) {
+        lcd.setCursor(i, 0);   // Move cursor to the next block in the first row
+        lcd.print(">");        // Print a character (e.g., "*") to "light up" the block
+        millis(2000);            // Adjust delay for speed (200ms between each block)
+        
+    }
+    } else {
+      // goes backward, display arrows going back
+      for (int i = 16; i >= 0; i--) {
+        lcd.setCursor(i, 0);   // Move cursor to the next block in the first row
+        lcd.print("<");        // Print a character (e.g., "*") to "light up" the block
+        millis(2000);            // Adjust delay for speed (200ms between each block)
+        
+    }
+    }
+
+  // else {
+    
+  //   if (Receive_Com[0] == 'L') {
+  //     lcd.print("Arrived at Loading Zone!");
+  //   }
+
+  //   slse if (Receive_Com[0] == 'L') {
+  //     lcd.print("Arrived at Delivery Zone!");
+  //   }
+  // }
+  
+  }
+}
+
+void LCD_UpdateIfNewData() {
+  // Check if the current command is different from the last one
+  if (strcmp(Receive_Com, lastReceiveCom) != 0) {
+    // Update lastReceiveCom to the current command
+    strcpy(lastReceiveCom, Receive_Com);
+    // Call LCD_Display function only if there is new data
+    LCD_Display();
+  }
+}
