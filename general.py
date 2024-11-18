@@ -222,14 +222,63 @@ class General:
                     print("Arrived at dropoff point!")
                     self.radioOperator.broadcast("D0:00")
     
-    def block_detection(self):
-        self.motorSergeant.drive()
-        self.motorSergeant.rotate()
-        self.recon.check_sensors(self.robot, ['u1', 'u3', 'u4', 'u5'], self.radioOperator) # u6 for TOF block
+    #self.motorSergeant.drive()
+    #self.motorSergeant.rotate()
+    #self.recon.check_sensors(self.robot, ['u1', 'u3', 'u4', 'u5'], self.radioOperator) # u6 for TOF block
 
-        #check if the block is in front of the robot
-        self.recon.check_sensors(self.robot, ['u1','u6'])
-        ##if self.robot.distance_sensors["u0"]{"reading"} > self.robot.distance_sensors["u5"]{"reading"}:
+
+     
+    block = False  #Intialize a boolean value for block detection. If True, block is visible from the front of the robot.
+    servo_angle = 160  #set a servo target angle to close behind the block
+
+    def block_detection(self):
+            
+        #check readings for both front sensors, u0 is top sensor, u6 is the block facing sensor
+        self.recon.check_sensors(self.robot, ['u0','u6'])
+
+        # Set the block boolean to True if the block is in front of the robot (if u0 value > u6 value )
+        if self.robot.distance_sensors["u0"]{"reading"} > self.robot.distance_sensors["u6"]{"reading"}:
+            print("Block Detected.")
+             block = True  
+        return block 
+
+    def block_pickup(self):
+        #take teh block true code 
+        #make sure the robot is 3-4 inches away from robot 
+        # while robot is 4-5 inches away from the robot, move the robot forward (note that the snow plough length is 1-1.5 in so when u6 reads 4-5 we are acc 3in away from the robot)
+            # if u6 == 2.5: 
+                #actuate the servo arm to grasp the block 
+                #self.radioOperator.broadcast("s:00")
+                #print(f"Servo arm reached {servo_angle} degrees")
+                #if u6 =< 1.6:
+                    #print ("Block on board!")
+                    # do something to continue on w keith's code (#return True)
+                    #else:
+                    # turn r0:-15
+                    # check again if u6 =< 1.6: 
+                    # if so then do something to continue on w keith's code (#return True)
+                    #else open the servo arm back up and locate the block and close the servo arm again and check 
+
+
+
+
+
+            # elif u6 < 3:
+                # move backward until u6 == 3 and maintain alignment
+
+
+            # else keep the robot moving forward [w0:] and maintain alignment until you reach u6 == 3
+
+        # [s:]
+
+
+
+
+
+
+            
+
+
 
 
 
