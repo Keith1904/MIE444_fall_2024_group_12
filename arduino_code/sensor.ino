@@ -607,8 +607,8 @@ void LCD_Display() {
     if (Receive_Com[3] != '-') {
       // goes forward, dispay arrows going forward
 
-      lcd.setCursor(6, 0);   // Move cursor to the next block in the first row
-      lcd.print(">");        // Print a character (e.g., "*") to "light up" the block
+      lcd.setCursor(0, 0);   // Move cursor to the next block in the first row
+      lcd.print(">>>>>>>");        // Print a character (e.g., "*") to "light up" the block
       delay(200);            // Adjust delay for speed (200ms between each block)
       
     //   for (int i = 0; i < 16; i++) {
@@ -619,8 +619,8 @@ void LCD_Display() {
     // }
     } else {
       // goes backward, display arrows going back
-      lcd.setCursor(6, 0);   // Move cursor to the next block in the first row
-      lcd.print("<");        // Print a character (e.g., "*") to "light up" the block
+      lcd.setCursor(0, 0);   // Move cursor to the next block in the first row
+      lcd.print("<<<<<<<");        // Print a character (e.g., "*") to "light up" the block
       delay(200);            // Adjust delay for speed (200ms between each block)
 
 
