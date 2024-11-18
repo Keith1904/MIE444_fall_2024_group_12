@@ -155,84 +155,84 @@ void setup() {
   digitalWrite(XSHUT_PIN0, HIGH);
   delay(10);  // Allow sensor to power up
 
-  Serial.println("Starting TOF Sensor...");
+  //Serial.println("Starting TOF Sensor...");
   
   Wire.begin();
   Wire.setClock(50000);
   
   if (!tof0.init()) {
-    Serial.println("Failed to detect TOF0 sensor! Check wiring.");
+    //Serial.println("Failed to detect TOF0 sensor! Check wiring.");
     while (1);
   }
   tof0.setAddress(sensorAddresses[0]);
   tof0.setTimeout(500);
-  Serial.println("TOF0 sensor initialized successfully.");
+  //Serial.println("TOF0 sensor initialized successfully.");
 
   digitalWrite(XSHUT_PIN1, HIGH);
   delay(10);  // Allow sensor to power up
 
   if (!tof1.init()) {
-    Serial.println("Failed to detect TOF1 sensor! Check wiring.");
+    //Serial.println("Failed to detect TOF1 sensor! Check wiring.");
     while (1);
   }
   tof1.setAddress(sensorAddresses[1]);
   tof1.setTimeout(500);
-  Serial.println("TOF1 sensor initialized successfully.");
+  //Serial.println("TOF1 sensor initialized successfully.");
 
   digitalWrite(XSHUT_PIN2, HIGH);
   delay(10);  // Allow sensor to power up
 
   if (!tof2.init()) {
-    Serial.println("Failed to detect TOF2 sensor! Check wiring.");
+    //Serial.println("Failed to detect TOF2 sensor! Check wiring.");
     while (1);
   }
   tof2.setAddress(sensorAddresses[2]);
   tof2.setTimeout(500);
-  Serial.println("TOF2 sensor initialized successfully.");
+  //Serial.println("TOF2 sensor initialized successfully.");
 
   digitalWrite(XSHUT_PIN3, HIGH);
   delay(10);  // Allow sensor to power up
 
   if (!tof3.init()) {
-    Serial.println("Failed to detect TOF3 sensor! Check wiring.");
+    //Serial.println("Failed to detect TOF3 sensor! Check wiring.");
     while (1);
   }
   tof3.setAddress(sensorAddresses[3]);
   tof3.setTimeout(500);
-  Serial.println("TOF3 sensor initialized successfully.");
+  //Serial.println("TOF3 sensor initialized successfully.");
 
   digitalWrite(XSHUT_PIN4, HIGH);
   delay(10);  // Allow sensor to power up
 
   if (!tof4.init()) {
-    Serial.println("Failed to detect TOF4 sensor! Check wiring.");
+    //Serial.println("Failed to detect TOF4 sensor! Check wiring.");
     while (1);
   }
   tof4.setAddress(sensorAddresses[1]);
   tof4.setTimeout(500);
-  Serial.println("TOF4 sensor initialized successfully.");
+  //Serial.println("TOF4 sensor initialized successfully.");
 
   digitalWrite(XSHUT_PIN5, HIGH);
   delay(10);  // Allow sensor to power up
 
   if (!tof5.init()) {
-    Serial.println("Failed to detect TOF5 sensor! Check wiring.");
+    //Serial.println("Failed to detect TOF5 sensor! Check wiring.");
     while (1);
   }
   tof5.setAddress(sensorAddresses[5]);
   tof5.setTimeout(500);
-  Serial.println("TOF5 sensor initialized successfully.");
+  //Serial.println("TOF5 sensor initialized successfully.");
 
   digitalWrite(XSHUT_PIN6, HIGH);
   delay(10);  // Allow sensor to power up
 
   if (!tof6.init()) {
-    Serial.println("Failed to detect TOF6 sensor! Check wiring.");
+    //Serial.println("Failed to detect TOF6 sensor! Check wiring.");
     while (1);
   }
   tof6.setAddress(sensorAddresses[6]);
   tof6.setTimeout(500);
-  Serial.println("TOF6 sensor initialized successfully.");
+  //Serial.println("TOF6 sensor initialized successfully.");
 
 
   ArdSerial.write("[M1:0,M2:0]");
@@ -397,8 +397,8 @@ void Receive_Data()
         Receive_Inpr = false;
         count = 0;
         New_Data = true;
-        Serial.print("Receive_Com in Receive_Data: ");
-        Serial.println(Receive_Com);
+        //Serial.print("Receive_Com in Receive_Data: ");
+        //Serial.println(Receive_Com);
       }
     }
     else if (data == Com_Start)
@@ -486,8 +486,8 @@ void Process_Servo_Com() {
 
 void Process_Sensor_Com()
 {
-  Serial.print("Receive_Com in Process_Sensor_Com: ");
-  Serial.println(Receive_Com);
+  //Serial.print("Receive_Com in Process_Sensor_Com: ");
+  //Serial.println(Receive_Com);
   String result = "[";
   char *token = strtok(Receive_Com, ","); // Split Receive_com by delimiter (commas)
 
@@ -497,9 +497,9 @@ void Process_Sensor_Com()
     float output = 0;
 
     if (tokenStr == "u0") {
-      Serial.println("Within if statement");
+      //Serial.println("Within if statement");
       output = tof0.readRangeSingleMillimeters();
-      Serial.println("Past if statement");
+      //Serial.println("Past if statement");
     } 
     else if (tokenStr == "u1") {
       output = tof1.readRangeSingleMillimeters();
@@ -626,7 +626,7 @@ void LCD_Display() {
   
   }
 }
-
+S
 // void LCD_UpdateIfNewData() {
 //   // Check if the current command is different from the last one
 //   if (strcmp(Receive_Com, lastReceiveCom) != 0) {
