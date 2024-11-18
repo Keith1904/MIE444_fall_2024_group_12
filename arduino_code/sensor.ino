@@ -177,10 +177,10 @@ void setup() {
   }
   tof1.setAddress(sensorAddresses[1]);
   tof1.setTimeout(500);
-  //Serial.println("TOF1 sensor initialized successfully.");
+  //Serial.println("TOF1 sensor initialized successfully."); 
 
   digitalWrite(XSHUT_PIN2, HIGH);
-  delay(10);  // Allow sensor to power up
+  delay(10);  // Allow sensor to power up 
 
   if (!tof2.init()) {
     //Serial.println("Failed to detect TOF2 sensor! Check wiring.");
@@ -199,7 +199,7 @@ void setup() {
   }
   tof3.setAddress(sensorAddresses[3]);
   tof3.setTimeout(500);
-  //Serial.println("TOF3 sensor initialized successfully.");
+  //Serial.println("TOF3 sensor initialized successfully."); 
 
   digitalWrite(XSHUT_PIN4, HIGH);
   delay(10);  // Allow sensor to power up
@@ -261,11 +261,11 @@ void loop()
     Receive_Com[0] = '\0';
   }
 
+  // Update LCD only if there's new data in Receive_Com
+  //LCD_UpdateIfNewData();
   //LCD_Display();
-  LCD_UpdateIfNewData();
-  Receive_Com[0] = '\0';
-  
-  //delay(5000);
+
+  Receive_Com[0] = '\0'; 
 }
 
 void DCM1_Enc_Update()
@@ -494,29 +494,40 @@ void Process_Sensor_Com()
   {
     String tokenStr = String(token);
     float output = 0;
-
     if (tokenStr == "u0") {
-      //Serial.println("Within if statement");
-      output = tof0.readRangeSingleMillimeters();
-      //Serial.println("Past if statement");
+      while(output < 1) {
+        output = tof0.readRangeSingleMillimeters()/25.4;
+      }
     } 
     else if (tokenStr == "u1") {
-      output = tof1.readRangeSingleMillimeters();
+      while(output < 1) {
+        output = tof1.readRangeSingleMillimeters()/25.4;
+      }
     } 
     else if (tokenStr == "u2") {
-      output = tof2.readRangeSingleMillimeters();
+      while(output < 1) {
+        output = tof2.readRangeSingleMillimeters()/25.4;
+      }
     } 
     else if (tokenStr == "u3") {
-      output = tof3.readRangeSingleMillimeters();
+      while(output < 1) {
+        output = tof3.readRangeSingleMillimeters()/25.4;
+      }
     } 
     else if (tokenStr == "u4") {
-      output = tof4.readRangeSingleMillimeters();
+      while(output < 1) {
+        output = tof4.readRangeSingleMillimeters()/25.4;
+      }
     } 
     else if (tokenStr == "u5") {
-      output = tof5.readRangeSingleMillimeters();
+      while(output < 1) {
+        output = tof5.readRangeSingleMillimeters()/25.4;
+      }
     } 
     else if (tokenStr == "u6") {
-      output = tof6.readRangeSingleMillimeters();
+      while(output < 1) {
+        output = tof6.readRangeSingleMillimeters()/25.4;
+      }
     } 
     else if (tokenStr == "m0")
     {
@@ -551,7 +562,7 @@ float M2_Check()
 }
 
 // Function to handle LCD display logic based on Receive_Com
-void LCD_Display() {
+/*void LCD_Display() {
   lcd.clear();
 
   // Check if the command is for "r" (arrow display)
@@ -571,19 +582,17 @@ void LCD_Display() {
     } else {
       // Display arrow bending left (this is cw)
 
-      for (int i=16 ; i>=0 ; i=i-3) {
+      for (int i=16 ; i>=0 ; i=i-3){
         lcd.setCursor(i, 0); // Set cursor to the first character of the top row for the circle
         lcd.write(byte(0));  // Top-left of the circle
         lcd.write(byte(3));  // Arrow left
         lcd.write(byte(1));  // Bottom-right of the circle
         delay(200);   
         }
-
       // lcd.setCursor(6, 0); // Set cursor to the first character of the top row for the circle
 
     }
   }
-
   // Check if the command is for "w" (display specific patterns)
   else if (Receive_Com[0] == 'w') {
     if (Receive_Com[3] != '-') {
@@ -593,17 +602,19 @@ void LCD_Display() {
         lcd.print(">");        // Print a character (e.g., "*") to "light up" the block
         delay(200);            // Adjust delay for speed (200ms between each block)
         
-      }
+    }
     } else {
       // goes backward, display arrows going back
       for (int i = 16; i >= 0; i--) {
         lcd.setCursor(i, 0);   // Move cursor to the next block in the first row
         lcd.print("<");        // Print a character (e.g., "*") to "light up" the block
         delay(200);            // Adjust delay for speed (200ms between each block)
-      }
+        
     }
-  } else {
-      if (Receive_Com[0] == 'L') {
+    }
+  }  else {
+    
+    if (Receive_Com[0] == 'L') {
       lcd.print("Arrived at Loading Zone!");
     }
 
@@ -611,14 +622,14 @@ void LCD_Display() {
       lcd.print("Arrived at Delivery Zone!");
     }
   }
-}
+ }
 
- void LCD_UpdateIfNewData() {
-   // Check if the current command is different from the last one
-   if (strcmp(Receive_Com, lastReceiveCom) != 0) {
-     // Update lastReceiveCom to the current command
-     strcpy(lastReceiveCom, Receive_Com);
-     // Call LCD_Display function only if there is new data
-     LCD_Display();
-   }
- } 
+void LCD_UpdateIfNewData() {
+  // Check if the current command is different from the last one
+  if (strcmp(Receive_Com, lastReceiveCom) != 0) {
+    // Update lastReceiveCom to the current command
+    strcpy(lastReceiveCom, Receive_Com);
+    // Call LCD_Display function only if there is new data
+    LCD_Display();
+  }
+} */
