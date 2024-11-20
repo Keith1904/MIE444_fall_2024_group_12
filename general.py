@@ -243,7 +243,7 @@ class General:
                 while_count += 1  # Increment the attempt counter
                 #print(f"Attempt {while_count} to detect the block.")
                 
-                self.block_detection()  # Call block detection logic
+                block = self.block_detection()  # Call block detection logic
                 
                 if block == True:  # If block is detected
                     #print("Block detected! Initiating pickup sequence.")
@@ -268,15 +268,20 @@ class General:
 
     def block_detection(self):
         """ Checks for the presence of the block. returns boolean block. True if block is visible by robot. """
-        #check readings for both front sensors, u0 is top sensor, u6 is the block facing sensor
-        self.recon.check_sensors(self.robot, ['u0','u6'])
 
-        # Set the block boolean to True if the block is in front of the robot (if u0 value > u6 value )
-        if self.robot.distance_sensors["u0"]{"reading"} > self.robot.distance_sensors["u6"]{"reading"}:
-            print("Block Detected.")
-            block = True  
-        else:
-            block = False
+
+        #check readings for both front sensors, u0 is top sensor, u6 is the block facing sensor
+        block = False
+        while not block:
+            self.recon.check_sensors(self.robot, ['u0','u6'])
+            # Set the block boolean to True if the block is in front of the robot (if u0 value > u6 value )
+            if self.robot.distance_sensors["u0"]{"reading"} > self.robot.distance_sensors["u6"]{"reading"}:
+                print("Block Detected.")
+                block = True  
+            else:
+                self.motorSergeant.rotate(5)
+                
+
         return block 
 
     
@@ -308,7 +313,7 @@ class General:
             else:
                 # Move closer to the block
                 offset = u6 - block_distance
-                self.radioOperator.broadcast(f"W0:{offset}")
+                self.radioOperator.broadcast(f"w0:{offset}")
                 print(f"Moving {offset} in towards the block")
 
                 # Call wall alignment function if required (Keith to check syntax)
@@ -323,7 +328,7 @@ class General:
 
 
 
-       
+
 
 
 
