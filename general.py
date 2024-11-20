@@ -222,54 +222,108 @@ class General:
                     print("Arrived at dropoff point!")
                     self.radioOperator.broadcast("D0:00")
     
-    #self.motorSergeant.drive()
-    #self.motorSergeant.rotate()
-    #self.recon.check_sensors(self.robot, ['u1', 'u3', 'u4', 'u5'], self.radioOperator) # u6 for TOF block
 
 
-     
-    block = False  #Intialize a boolean value for block detection. If True, block is visible from the front of the robot.
-    servo_angle = 160  #set a servo target angle to close behind the block
+    #Block Detection and Pick-up System
+    def courier(self):
+         """
+            Checks for the block, picks up the block, checks if the block is on board, 
+            and directs the robot to the delivery zone. If the block isn't detected after 
+            5 attempts, directs the robot to the delivery zone anyway.
+        """
+        block = False  #Intialize a boolean value for block detection. If True, block is visible from the front of the robot.
+        servo_angle = 160  #set a servo target angle to close behind the block
+        while_count = 0  # Initialize a counter to track the number of while loop iterations
+        block_distance = 2.5 #Ideal distance between the robot and the block while actuating the servo (this is right when )
+
+        if self.objective == "lz":  # Check if the robot is at the loading zone - might need to change syntax to reflect this (ask keith)
+            #print("Arrived at the loading zone. Searching for block...")
+
+            while while_count <= 3:  # Attempt up to 3 times to find the block
+                while_count += 1  # Increment the attempt counter
+                #print(f"Attempt {while_count} to detect the block.")
+                
+                self.block_detection()  # Call block detection logic
+                
+                if block == True:  # If block is detected
+                    #print("Block detected! Initiating pickup sequence.")
+                    #self.block_pickup()     # Call block pickup logic
+
+                    if self.block_pickup():  # Call block pickup logic
+                        print("Block successfully picked up. Heading to delivery zone.")
+                        #self.go_to_delivery_zone()  # Navigate to the delivery zone - might need to change syntax to reflect this (ask keith
+                        return  # Exit function after success
+                    else:
+                        print("Failed to pick up block. Retrying...")
+                else:
+                    print("Block not detected. Retrying...")
+
+            # After n unsuccessful attempts, proceed to the delivery zone
+            print("Block not detected after many attempts. Heading to delivery zone.")
+            # self.go_to_delivery_zone() - might need to change syntax to reflect this (ask keith
+        else:
+            print("Robot is not at the loading zone. Aborting courier operation.")
+
+
 
     def block_detection(self):
-            
+        """ Checks for the presence of the block. returns boolean block. True if block is visible by robot. """
         #check readings for both front sensors, u0 is top sensor, u6 is the block facing sensor
         self.recon.check_sensors(self.robot, ['u0','u6'])
 
         # Set the block boolean to True if the block is in front of the robot (if u0 value > u6 value )
         if self.robot.distance_sensors["u0"]{"reading"} > self.robot.distance_sensors["u6"]{"reading"}:
             print("Block Detected.")
-             block = True  
+            block = True  
+        else:
+            block = False
         return block 
 
+    
     def block_pickup(self):
-        #take teh block true code 
-        #make sure the robot is 3-4 inches away from robot 
-        # while robot is 4-5 inches away from the robot, move the robot forward (note that the snow plough length is 1-1.5 in so when u6 reads 4-5 we are acc 3in away from the robot)
-            # if u6 == 2.5: 
-                #actuate the servo arm to grasp the block 
-                #self.radioOperator.broadcast("s:00")
-                #print(f"Servo arm reached {servo_angle} degrees")
-                #if u6 =< 1.6:
-                    #print ("Block on board!")
-                    # do something to continue on w keith's code (#return True)
-                    #else:
-                    # turn r0:-15
-                    # check again if u6 =< 1.6: 
-                    # if so then do something to continue on w keith's code (#return True)
-                    #else open the servo arm back up and locate the block and close the servo arm again and check 
+        """ tries 3 times to pick up the block, on the fourth try it releases the servo arm and aborts. 
+        returns boolean called parcel, True if block is on board. """
+
+        max_attempts = 3  # Maximum number of attempts to pick up the block
+        attempt = 0  # Counter to track attempts
+
+        while attempt <= max_attempts:
+            u6 = self.robot.distance_sensors["u6"]["reading"]  # Get the sensor reading
+            
+            if u6 == block_distance:
+                # Actuate the servo arm to grasp the block
+                self.radioOperator.broadcast(f"s:{servo_angle}")
+                print(f"Servo arm reached {servo_angle} degrees")
+                
+                # Check if the block is secured
+                if u6 <= 1.6:
+                    #print("Block on board!")
+                    return True  # Block successfully picked up
+                    break
+
+                else:
+                    # Turn to adjust position and check again
+                    print("Adjusting position...")
+                    self.radioOperator.broadcast("r0:-15")  # Turn robot slightly
+            else:
+                # Move closer to the block
+                offset = u6 - block_distance
+                self.radioOperator.broadcast(f"W0:{offset}")
+                print(f"Moving {offset} in towards the block")
+
+                # Call wall alignment function if required (Keith to check syntax)
+                #self.wall_alignment()
+
+            attempt += 1  # Increment attempt counter
+
+        # If max attempts reached, open the servo arm and abort
+        print("Max attempts reached. Releasing servo arm.")
+        self.radioOperator.broadcast("s:00")  # open the servo arm by returning it to zero degrees
+        return False  # Block pickup failed
 
 
 
-
-
-            # elif u6 < 3:
-                # move backward until u6 == 3 and maintain alignment
-
-
-            # else keep the robot moving forward [w0:] and maintain alignment until you reach u6 == 3
-
-        # [s:]
+       
 
 
 
