@@ -40,7 +40,8 @@ distance_sensors = {
     "u2": {"x": 0, "y": -3.45, "rotation": 180, "reading": 0, "previous_reading": 0},
     "u3": {"x": -3.75, "y": -2.25, "rotation": -90, "reading": 0, "previous_reading": 0},
     "u4": {"x": 3.75, "y": 2.25, "rotation": 90, "reading": 0, "previous_reading": 0},
-    "u5": {"x": -3.75, "y": 2.25, "rotation": -90, "reading": 0, "previous_reading": 0}
+    "u5": {"x": -3.75, "y": 2.25, "rotation": -90, "reading": 0, "previous_reading": 0},
+    "u6": {"x": 0, "y": 3.99, "rotation": 0, "reading": 0, "previous_reading": 0}
   #  "t0": {"x": 0, "y": 0, "rotation": 0, "reading": 0}
 }
 
@@ -69,7 +70,7 @@ FRAMEEND = ']'
 CMD_DELIMITER = ','
 
 ### Set whether to use TCP (SimMeR) or serial (Arduino) ###
-SIMULATE = True
+SIMULATE = False
 
 if SIMULATE:
     TRANSMIT_PAUSE = 0.1
