@@ -128,7 +128,7 @@ class Scout:
         :param epsilon: A small value to prevent division by zero during normalization.
         """
         total_weight = 0.0
-        sensor_ids = ["u0", "u1", "u2", "u3", "u4", "u5"]
+        sensor_ids = ["u0", "u1", "u2", "u3", "u4"]
 
         for particle in self.particles:
             # Set the initial weight to 1.0 and then adjust based on validity and sensor likelihoods.

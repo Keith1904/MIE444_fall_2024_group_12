@@ -44,6 +44,7 @@ class RadioOperator:
             time.sleep(0.1)
         self.line_busy = True
         packet_tx = self.packetize(data)
+        print(f"transmitting this: {packet_tx}")
         self.transmit(packet_tx)
         if response:
             response =  self.receive()

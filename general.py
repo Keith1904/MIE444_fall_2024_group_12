@@ -48,12 +48,14 @@ class General:
         if self.mode == 'auto':
             self.update_maze()
             #self.wall_alignment()
+            #self.radioOperator.broadcast("s:160")
+            time.sleep(2)
             self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
-            self.scout.update_weights(self.MAZE, self.robot, sigma = 0.2)
+            self.scout.update_weights(self.MAZE, self.robot, sigma = 0.4)
             while True:
                 if self.motorSergeant.reset:
                     print("resetting")
-                    if self.scout.localized:
+                    if False:
                         if self.objective == "lz":
                             print("Heading to lz!")
                             direction = self.pathfinder.get_turn_angle((self.scout.average_x, self.scout.average_y), self.scout.average_theta, (0, 0))
@@ -67,6 +69,7 @@ class General:
                     self.motorSergeant.drive(1)
                     time.sleep(1)
                     self.motorSergeant.rotate(direction)
+                    time.sleep(1)
                     self.motorSergeant.reset = False
                     self.motorSergeant.reset_cooldown = 3
                 else:
@@ -84,7 +87,7 @@ class General:
                 self.update_objective()
                 if not self.motorSergeant.reset:
                     self.motorSergeant.drive(3)
-                    time.sleep(1)
+                    time.sleep(2)
                     self.motorSergeant.reset_cooldown -= 1
         if self.mode == 'manual':
             self.update_maze()
@@ -210,7 +213,7 @@ class General:
         pygame.display.flip()
     
     def update_objective(self):
-        if self.scout.localized:
+        if False:
             current_location = (self.scout.average_x // 12, self.scout.average_y // 12)
             if self.objective == "lz":
                if current_location == (0, 0) or current_location == (0, 1) or current_location == (1, 0) or current_location == (1, 1):
@@ -232,7 +235,7 @@ class General:
 
         if self.objective == "lz":  # Check if the robot is at the loading zone - might need to change syntax to reflect this (ask keith)
             #print("Arrived at the loading zone. Searching for block...")
-
+            self.radioOperator.broadcast("s:0")
             while while_count <= 3:  # Attempt up to 3 times to find the block
                 while_count += 1  # Increment the attempt counter
                 #print(f"Attempt {while_count} to detect the block.")
@@ -353,6 +356,7 @@ class Robot:
 if __name__ == "__main__":
     general = General()
     np.random.seed(SETTINGS.floor_seed)
-    #general.initialize_maze()      
+    general.initialize_maze()      
     #general.block_detection()
-    general.courier()
+    #general.courier()
+    general.execute_mission()
