@@ -48,14 +48,14 @@ class General:
         if self.mode == 'auto':
             self.update_maze()
             #self.wall_alignment()
-            #self.radioOperator.broadcast("s:160")
+            self.radioOperator.broadcast("s:160")
             time.sleep(2)
             self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
             self.scout.update_weights(self.MAZE, self.robot, sigma = 0.4)
             while True:
                 if self.motorSergeant.reset:
                     print("resetting")
-                    if False:
+                    if self.scout.localized:
                         if self.objective == "lz":
                             print("Heading to lz!")
                             direction = self.pathfinder.get_turn_angle((self.scout.average_x, self.scout.average_y), self.scout.average_theta, (0, 0))
@@ -213,11 +213,12 @@ class General:
         pygame.display.flip()
     
     def update_objective(self):
-        if False:
+        if self.scout.localized:
             current_location = (self.scout.average_x // 12, self.scout.average_y // 12)
             if self.objective == "lz":
                if current_location == (0, 0) or current_location == (0, 1) or current_location == (1, 0) or current_location == (1, 1):
                    print("Arrived at loading zone!")
+                   self.courier()
                    self.radioOperator.broadcast("L0:00")
                    self.objective = "dp"
             if self.objective == "dp":
