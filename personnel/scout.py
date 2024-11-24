@@ -6,6 +6,7 @@ import scipy.stats
 from collections import Counter
 from statistics import mean
 import utilities
+from sklearn.cluster import DBSCAN
 
 class Scout:
     '''This class performs the particle filter localization algorithm.'''
@@ -160,21 +161,17 @@ class Scout:
         stdev = self.position_standard_deviation()
         print(f"stdev: {stdev}")
         print(f"total weight: {total_weight}")
-        if stdev < 2:
-            self.localized = True
-            print("Localized!")
-        if total_weight < 1e-6:
-            print("Warning: Total weight is too close to zero, reinitializing particles!")
-            self.particles = self.initialize_particles()
-            self.localized = False
-        elif total_weight < epsilon:
-            print("Warning: Total weight is too close to zero, skipping normalization.")
-            for particle in self.particles:
-                particle.weight = 1.0 / len(self.particles)
-        else:
-            # Normalize weights
-            for particle in self.particles:
-                particle.weight /= total_weight
+#        if total_weight < 1e-6:
+#            print("Warning: Total weight is too close to zero, reinitializing particles!")
+#            self.particles = self.initialize_particles()
+#            self.localized = False
+#        elif total_weight < epsilon:
+#            print("Warning: Total weight is too close to zero, skipping normalization.")
+#            for particle in self.particles:
+#                particle.weight = 1.0 / len(self.particles)
+        # Normalize weights
+        for particle in self.particles:
+            particle.weight /= total_weight
 
     def gaussian(self, mean, sigma, x):
         """
@@ -187,15 +184,18 @@ class Scout:
         """
         return (1.0 / (sigma * math.sqrt(2.0 * math.pi))) * math.exp(-0.5 * ((x - mean) / sigma) ** 2)
                  
-    def resample(self):
+    def resample(self, injection_fraction=0.05):
         """
-        Resample particles with replacement based on their weights.
+        Resample particles with replacement based on their weights, with a fraction of random particles injected.
 
-        :return: New list of resampled particles.
+        :param injection_fraction: Fraction of new particles to inject (default 10%).
+        :param maze_bounds: Dictionary with maze boundaries for random particle injection.
+                            Example: {'x_min': 0, 'x_max': 10, 'y_min': 0, 'y_max': 10}.
         """
         new_particles = []
         N = len(self.particles)
-
+        
+        
         # Create an array of cumulative weights
         cumulative_weights = [0.0] * N
         cumulative_weights[0] = self.particles[0].weight
@@ -216,7 +216,24 @@ class Scout:
             selected_particle.weight = 1.0 / N
             new_particles.append(selected_particle)
 
-        self.particles = new_particles  # Replace old particles with new resampled ones
+        # Inject random particles
+        num_to_inject = int(N * injection_fraction)
+        for _ in range(num_to_inject):
+            while True:
+                x = random.uniform(0, self.maze.size_x)
+                y = random.uniform(0, self.maze.size_y)
+                theta = random.choice([0, 90, 180, 270])  # Choose a cardinal direction
+                if self.is_valid_position(x, y):
+                    random_particle = Particle(x, y, theta, 1 / self.num_particles)
+                    new_particles[random.randint(0, N - 1)] = random_particle  # Replace an existing particle
+                    break
+
+        self.particles = new_particles  # Replace old particles with the new ones
+        if self.is_localized():
+            self.localized = True
+            print("Localized!")
+        else:
+            self.localized = False
 
     def copy_particle(self, particle):
         """
@@ -281,6 +298,15 @@ class Scout:
         std_dev_distance = math.sqrt(distance_variance)
 
         return std_dev_distance
+
+    def is_localized(self, eps=6, min_samples=500):
+        positions = np.array([[p.x, p.y] for p in self.particles])
+        clustering = DBSCAN(eps=eps, min_samples=min_samples).fit(positions)
+        labels = clustering.labels_
+        largest_cluster = max(set(labels), key=list(labels).count)
+        cluster_size = list(labels).count(largest_cluster)
+        print(f"CLUSTER SIZE: {cluster_size}")
+        return cluster_size / len(self.particles) > 0.85  # Example threshold
     
 class Particle:
     '''Defines the attributes of a particle including it's position and weight.'''
