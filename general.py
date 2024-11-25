@@ -66,8 +66,9 @@ class General:
                             distance, direction = self.pathfinder.find_furthest_distance(self.robot)
                     else: 
                         distance, direction = self.pathfinder.find_furthest_distance(self.robot)
-                    self.motorSergeant.drive(1)
-                    time.sleep(1)
+                    if self.robot.distance_sensors["u0"]["reading"] > 2:
+                        self.motorSergeant.drive(1)
+                        time.sleep(1)
                     self.motorSergeant.rotate(direction)
                     time.sleep(1)
                     self.motorSergeant.reset = False
@@ -220,10 +221,14 @@ class General:
                    print("Arrived at loading zone!")
                    self.courier()
                    self.radioOperator.broadcast("L0:00")
+                   self.courier()
                    self.objective = "dp"
             if self.objective == "dp":
                 if current_location == self.dropoff_point:
                     print("Arrived at dropoff point!")
+                    self.radioOperator.broadcast("s:0")
+                    self.motorSergeant.drive(-2)
+                    time.sleep(2)
                     self.radioOperator.broadcast("D0:00")
     
 
@@ -237,12 +242,26 @@ class General:
         if self.objective == "lz":  # Check if the robot is at the loading zone - might need to change syntax to reflect this (ask keith)
             #print("Arrived at the loading zone. Searching for block...")
             self.radioOperator.broadcast("s:0")
+            time.sleep(2)
             while while_count <= 3:  # Attempt up to 3 times to find the block
                 while_count += 1  # Increment the attempt counter
                 #print(f"Attempt {while_count} to detect the block.")
-                
-                block = self.block_detection()  # Call block detection logic
-                
+                direction = 1
+                if self.scout.localized:
+                    current_location = (self.scout.average_x // 12, self.scout.average_y // 12)
+                    if current_location == (2, 0) or current_location == (1, 0):
+                        direction = -1
+                block = self.block_detection(direction = -1)  # Call block detection logic
+                self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
+                self.scout.predict()
+                self.scout.update_weights(self.MAZE, self.robot, sigma = 0.4)
+                neff = self.scout.compute_neff()
+                print(f"neff: {neff}")
+                if neff < 1250:
+                    print("resampling!")
+                    self.scout.resample()
+                self.scout.weighted_average()
+                self.update_maze()
                 if block == True:  # If block is detected
                     #print("Block detected! Initiating pickup sequence.")
                     #self.block_pickup()     # Call block pickup logic
@@ -357,7 +376,6 @@ class Robot:
 if __name__ == "__main__":
     general = General()
     np.random.seed(SETTINGS.floor_seed)
-    general.initialize_maze()      
-    #general.block_detection()
-    #general.courier()
-    general.execute_mission()
+    general.initialize_maze()
+    general.courier()
+    #general.execute_mission()
