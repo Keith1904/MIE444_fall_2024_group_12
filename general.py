@@ -48,7 +48,7 @@ class General:
         if self.mode == 'auto':
             self.update_maze()
             #self.wall_alignment()
-            self.radioOperator.broadcast("s:160")
+            self.radioOperator.broadcast("s:0")
             time.sleep(2)
             self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
             self.scout.update_weights(self.MAZE, self.robot, sigma = 0.4)
@@ -93,7 +93,7 @@ class General:
         if self.mode == 'manual':
             self.update_maze()
             self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
-            self.scout.update_weights(self.MAZE, self.robot, sigma = 0.4)
+            self.scout.update_weights(self.MAZE, self.robot, sigma = 0.5)
             while True:
                 self.update_maze()
                 print("Enter a command: ")
@@ -295,6 +295,7 @@ class General:
                 block = True  
             else:
                 self.motorSergeant.rotate(3 * direction)
+                time.sleep(0.3)
                 
 
         return block 
@@ -377,5 +378,6 @@ if __name__ == "__main__":
     general = General()
     np.random.seed(SETTINGS.floor_seed)
     general.initialize_maze()
-    general.courier()
-    #general.execute_mission()
+    #print(general.radioOperator.broadcast("u0,u1,u2,u3,u4,u5,m0,m1", response = True))
+    #general.courier()
+    general.execute_mission()

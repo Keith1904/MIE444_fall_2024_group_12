@@ -129,7 +129,7 @@ class Scout:
         :param epsilon: A small value to prevent division by zero during normalization.
         """
         total_weight = 0.0
-        sensor_ids = ["u0", "u1", "u2", "u3", "u4"]
+        sensor_ids = ["u1", "u3", "u4", "u5"]
 
         for particle in self.particles:
             # Set the initial weight to 1.0 and then adjust based on validity and sensor likelihoods.
@@ -144,15 +144,15 @@ class Scout:
                 for sensor_id in sensor_ids:
                     simulated_reading = particle.simulate_ultrasonic_sensor(maze, robot, sensor_id)
                     actual_reading = robot.distance_sensors[sensor_id]["reading"]
-                    
-                    # Adjust sigma based on the reading (e.g., linearly proportional to distance)
-                    adaptive_sigma = sigma * actual_reading
-                    
-                    # Calculate the likelihood using a Gaussian function
-                    weight = self.gaussian(actual_reading, adaptive_sigma, simulated_reading)
-                    
-                    # Update the particle's weight
-                    particle.weight *= weight
+                    if actual_reading < 5:
+                        # Adjust sigma based on the reading (e.g., linearly proportional to distance)
+                        adaptive_sigma = sigma * actual_reading
+                        
+                        # Calculate the likelihood using a Gaussian function
+                        weight = self.gaussian(actual_reading, adaptive_sigma, simulated_reading)
+                        
+                        # Update the particle's weight
+                        particle.weight *= weight
 
             # Accumulate total weight for normalization later
             total_weight += particle.weight
