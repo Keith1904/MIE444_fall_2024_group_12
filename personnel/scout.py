@@ -11,17 +11,23 @@ from sklearn.cluster import DBSCAN
 class Scout:
     '''This class performs the particle filter localization algorithm.'''
     
-    def __init__(self, num_particles, maze, robot, update_type = "distance"):
+    def __init__(self, num_particles, maze, robot, update_type = "distance", localization_type = "particle_filter"):
         # Define MCL Parameters
         self.num_particles = num_particles
         self.maze = maze
-        self.particles = self.initialize_particles()
+        self.localization_type = localization_type
+        if self.localization_type == "particle_filter":
+            self.particles = self.initialize_particles()
         self.robot = robot
         self.average_x = 0
         self.average_y = 0
         self.average_theta = 0
         self.localized = False
         self.update_type = update_type
+        self.belief = np.ones_like(self.maze, dtype=float) / np.sum(maze > 0)  # Initialize uniform distribution
+        self.sensor_fov = [0, 90, 180, 270]  # Cardinal directions in degrees
+        self.p_wall = 0.9
+        self.p_open = 0.1
     
     def initialize_particles(self):
         """Randomly generate the first batch of particles around the maze in valid locations."""
@@ -320,6 +326,70 @@ class Scout:
         cluster_size = list(labels).count(largest_cluster)
         print(f"CLUSTER SIZE: {cluster_size}")
         return cluster_size / len(self.particles) > 0.85  # Example threshold
+    
+    def update_belief_sensor(self):
+        # Update belief grid based on sensor readings
+        for i in range(self.maze.walls.shape[0]):
+            for j in range(self.maze.walls.shape[1]):
+                if self.maze[i, j] > 0:  # Only consider free spaces
+                    sensor_ids = ["u0", "u1", "u2", "u3"]
+                    prob = 1.0
+                    for sensor in sensor_ids:
+                        prob *= self.sensor_model(sensor, i, j)
+                    self.belief[i, j] *= prob
+        
+        self.normalize_belief()
+
+    def sensor_model(self, sensor, i, j):
+        """Binary sensor model: wall presence vs open space."""
+        simulated_reading = self.simulate_ultrasonic_sensor(self.maze, self.robot, sensor)
+        wall_detected = self.robot.distance_sensors[sensor]["reading"] < 4
+        expected_wall = simulated_reading < 4
+        if wall_detected == expected_wall:
+            return self.p_wall
+        else:
+            return self.p_open
+
+    def motion_update(self, dx, dy):
+        # Update belief grid based on robot motion (translation only for simplicity)
+        new_belief = np.zeros_like(self.belief)
+        for i in range(self.maze.shape[0]):
+            for j in range(self.maze.shape[1]):
+                if self.maze[i, j] > 0:  # Only update for free spaces
+                    prev_i, prev_j = i - dx, j - dy
+                    if 0 <= prev_i < self.maze.shape[0] and 0 <= prev_j < self.maze.shape[1]:
+                        new_belief[i, j] = self.belief[prev_i, prev_j]
+        self.belief = new_belief
+        self.normalize_belief()
+
+    def normalize_belief(self):
+        # Normalize the belief grid
+        total_prob = np.sum(self.belief)
+        if total_prob > 0:
+            self.belief /= total_prob
+
+    def get_most_likely_position(self):
+        # Return the grid cell with the highest probability
+        max_idx = np.unravel_index(np.argmax(self.belief), self.belief.shape)
+        return max_idx
+
+    def simulate_ultrasonic_sensor(self, maze, robot, sensor_id, x, y, theta):
+        sensor_angle = theta - robot.distance_sensors[sensor_id]["rotation"]
+        length = pygame.math.Vector2(100,0)
+        sensor_x = x + robot.distance_sensors[sensor_id]["y"] * math.cos(math.radians(theta)) + robot.distance_sensors[sensor_id]["x"] * math.sin(math.radians(theta))
+        sensor_y = y + robot.distance_sensors[sensor_id]["x"] * math.cos(math.radians(theta)) - robot.distance_sensors[sensor_id]["y"] * math.sin(math.radians(theta))
+        beam_end = pygame.math.Vector2.rotate(length, -sensor_angle) + [sensor_x, sensor_y]
+        beam = [pygame.math.Vector2(sensor_x, sensor_y), beam_end]
+        
+        walls_to_check = maze.reduced_walls
+        squared_distance = 100^2
+        for wall in walls_to_check:
+            collision_points = utilities.collision(beam, wall)
+            if not collision_points:
+                pass
+            else:
+                beam[1], squared_distance = utilities.closest_fast([sensor_x, sensor_y], collision_points)
+        return math.sqrt(squared_distance)
     
 class Particle:
     '''Defines the attributes of a particle including it's position and weight.'''

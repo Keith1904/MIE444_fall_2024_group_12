@@ -34,7 +34,7 @@ class General:
             TRANSMIT_PAUSE=SETTINGS.TRANSMIT_PAUSE
             )
         self.pathfinder = Pathfinder(SETTINGS.walls)
-        self.scout = Scout(2500, self.MAZE, self.robot, update_type = "distance")
+        self.scout = Scout(2500, self.MAZE, self.robot, update_type = "distance", localization_type = "histogram")
         self.motorSergeant = MotorSergeant(self.radioOperator)
         self.recon = Recon()
         time.sleep(3)
