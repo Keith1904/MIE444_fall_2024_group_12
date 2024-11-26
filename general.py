@@ -34,7 +34,7 @@ class General:
             TRANSMIT_PAUSE=SETTINGS.TRANSMIT_PAUSE
             )
         self.pathfinder = Pathfinder(SETTINGS.walls)
-        self.scout = Scout(2500, self.MAZE, self.robot, update_type = "walls")
+        self.scout = Scout(2500, self.MAZE, self.robot, update_type = "distance")
         self.motorSergeant = MotorSergeant(self.radioOperator)
         self.recon = Recon()
         time.sleep(3)
@@ -55,7 +55,7 @@ class General:
             while True:
                 if self.motorSergeant.reset:
                     print("resetting")
-                    if self.scout.localized:
+                    if False:
                         if self.objective == "lz":
                             print("Heading to lz!")
                             direction = self.pathfinder.get_turn_angle((self.scout.average_x, self.scout.average_y), self.scout.average_theta, (0, 0))
@@ -77,7 +77,7 @@ class General:
                     self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
                     self.motorSergeant.adjust(self.robot, self.scout.localized)
                 self.scout.predict()
-                self.scout.update_weights(self.MAZE, self.robot, sigma = 0.4)
+                self.scout.update_weights(self.MAZE, self.robot, sigma = 1)
                 neff = self.scout.compute_neff()
                 print(f"neff: {neff}")
                 if neff < 1250:
@@ -85,7 +85,7 @@ class General:
                     self.scout.resample()
                 self.scout.weighted_average()
                 self.update_maze()
-                self.update_objective()
+                #self.update_objective()
                 if not self.motorSergeant.reset:
                     self.motorSergeant.drive(3)
                     time.sleep(2)
@@ -284,7 +284,7 @@ class General:
     def block_detection(self, direction = 1):
         """ Checks for the presence of the block. returns boolean block. True if block is visible by robot. """
 
-
+        direction = -1
         #check readings for both front sensors, u0 is top sensor, u6 is the block facing sensor
         block = False
         while not block:
