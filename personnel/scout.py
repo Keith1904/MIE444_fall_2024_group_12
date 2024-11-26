@@ -11,7 +11,7 @@ from sklearn.cluster import DBSCAN
 class Scout:
     '''This class performs the particle filter localization algorithm.'''
     
-    def __init__(self, num_particles, maze, robot):
+    def __init__(self, num_particles, maze, robot, update_type = "distance"):
         # Define MCL Parameters
         self.num_particles = num_particles
         self.maze = maze
@@ -21,6 +21,7 @@ class Scout:
         self.average_y = 0
         self.average_theta = 0
         self.localized = False
+        self.update_type = update_type
     
     def initialize_particles(self):
         """Randomly generate the first batch of particles around the maze in valid locations."""
@@ -119,57 +120,69 @@ class Scout:
             # Update the particle's position
             particle.update_position(x=x_new, y=y_new, theta=theta_new)
             
-    def update_weights(self, maze, robot, sigma=0.3, epsilon=1e-8):
-        """
-        Update the weight of each particle based on the actual sensor readings.
+def update_weights(self, maze, robot, sigma=0.3, epsilon=1e-8):
+    """
+    Update the weight of each particle based on whether there is a wall detected or not.
 
-        :param maze: Maze object containing the layout and wall positions.
-        :param robot: Robot object providing actual sensor readings.
-        :param sigma: Standard deviation of sensor noise.
-        :param epsilon: A small value to prevent division by zero during normalization.
-        """
-        total_weight = 0.0
-        sensor_ids = ["u1", "u3", "u4", "u5"]
+    :param maze: Maze object containing the layout and wall positions.
+    :param robot: Robot object providing actual sensor readings.
+    :param sigma: Standard deviation of sensor noise for fallback Gaussian update.
+    :param epsilon: A small value to prevent division by zero during normalization.
+    """
+    total_weight = 0.0
+    sensor_ids = ["u0", "u1", "u2", "u3", "u4", "u5"]
+    wall_threshold = 4.0  # Distance threshold for detecting a wall
 
-        for particle in self.particles:
-            # Set the initial weight to 1.0 and then adjust based on validity and sensor likelihoods.
-            particle.weight = 1.0
+    for particle in self.particles:
+        # Initialize weight to a default value
+        particle.weight = 1.0
 
-            # Check if the particle is in a valid position and clear of walls
-            if not (self.is_valid_position(particle.x, particle.y) and self.is_clear_of_walls(particle.x, particle.y)):
-                # Penalize invalid particles by reducing their weight (or setting it to a small value)
-                particle.weight = epsilon  # Assign a minimal weight to invalid particles
-            else:
-                # Compute the likelihood for each sensor reading if the particle is in a valid position
+        # Check if the particle is in a valid position
+        if not (self.is_valid_position(particle.x, particle.y) and self.is_clear_of_walls(particle.x, particle.y)):
+            particle.weight = epsilon
+        else:
+            if self.update_type == "distance":
+                # Compare wall presence between simulated and actual readings
                 for sensor_id in sensor_ids:
                     simulated_reading = particle.simulate_ultrasonic_sensor(maze, robot, sensor_id)
                     actual_reading = robot.distance_sensors[sensor_id]["reading"]
-                    if actual_reading < 5:
-                        # Adjust sigma based on the reading (e.g., linearly proportional to distance)
-                        adaptive_sigma = sigma * actual_reading
-                        
-                        # Calculate the likelihood using a Gaussian function
-                        weight = self.gaussian(actual_reading, adaptive_sigma, simulated_reading)
-                        
-                        # Update the particle's weight
-                        particle.weight *= weight
 
-            # Accumulate total weight for normalization later
-            total_weight += particle.weight
+                    # Check for wall presence
+                    simulated_wall = simulated_reading < wall_threshold
+                    actual_wall = actual_reading < wall_threshold
 
-        # Check if the particle filter is sufficiently localized
-        stdev = self.position_standard_deviation()
-        print(f"stdev: {stdev}")
-        print(f"total weight: {total_weight}")
-#        if total_weight < 1e-6:
-#            print("Warning: Total weight is too close to zero, reinitializing particles!")
-#            self.particles = self.initialize_particles()
-#            self.localized = False
-#        elif total_weight < epsilon:
-#            print("Warning: Total weight is too close to zero, skipping normalization.")
-#            for particle in self.particles:
-#                particle.weight = 1.0 / len(self.particles)
-        # Normalize weights
+                    if simulated_wall == actual_wall:
+                        # If both readings agree, give higher weight
+                        particle.weight *= 1.0
+                    else:
+                        # Penalize if they disagree
+                        particle.weight *= epsilon
+            elif self.update_type == "wall":
+                # Compare wall presence between simulated and actual readings
+                for sensor_id in sensor_ids:
+                    simulated_reading = particle.simulate_ultrasonic_sensor(maze, robot, sensor_id)
+                    actual_reading = robot.distance_sensors[sensor_id]["reading"]
+
+                    # Check for wall presence
+                    simulated_wall = simulated_reading < wall_threshold
+                    actual_wall = actual_reading < wall_threshold
+
+                    if simulated_wall == actual_wall:
+                        # If both readings agree, give higher weight
+                        particle.weight *= 1.0
+                    else:
+                        # Penalize if they disagree
+                        particle.weight *= 0.5
+
+        # Accumulate total weight for normalization
+        total_weight += particle.weight
+
+    # Normalize weights
+    if total_weight < epsilon:
+        # Avoid collapse by resetting weights if all become too small
+        for particle in self.particles:
+            particle.weight = 1.0 / len(self.particles)
+    else:
         for particle in self.particles:
             particle.weight /= total_weight
 
