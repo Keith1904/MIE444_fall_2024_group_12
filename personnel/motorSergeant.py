@@ -17,9 +17,24 @@ class MotorSergeant:
 
     def rotate(self, angle):
         print(f"Rotating this angle: {angle}")
-        response = ""
-        while not response:
-            response = self.radioOperator.broadcast("r0:" + str(angle), response = True)
+        remaining_angle = angle
+        while abs(remaining_angle) > 90:
+            # Break into chunks of ±90
+            chunk_angle = 90 if remaining_angle > 0 else -90
+            print(f"Rotating chunk angle: {chunk_angle}")
+            response = ""
+            while not response:
+                response = self.radioOperator.broadcast("r0:" + str(chunk_angle), response=True)
+                time.sleep(0.5)
+            remaining_angle -= chunk_angle
+
+        # Rotate the remaining angle (if any)
+        if remaining_angle != 0:
+            print(f"Rotating final angle: {remaining_angle}")
+            response = ""
+            while not response:
+                response = self.radioOperator.broadcast("r0:" + str(remaining_angle), response=True)
+                time.sleep(0.5)
 
     def issue_command(self, cmd):
         self.radioOperator.broadcast(cmd)
