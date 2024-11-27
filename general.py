@@ -34,7 +34,7 @@ class General:
             TRANSMIT_PAUSE=SETTINGS.TRANSMIT_PAUSE
             )
         self.pathfinder = Pathfinder(SETTINGS.walls)
-        self.scout = Scout(2500, self.MAZE, self.robot, update_type = "distance", localization_type = "histogram")
+        self.scout = Scout(2500, self.MAZE, self.robot, update_type = "distance", localization_type = "particle_filter", maze_walls = SETTINGS.walls)
         self.motorSergeant = MotorSergeant(self.radioOperator)
         self.recon = Recon()
         time.sleep(3)
@@ -51,7 +51,10 @@ class General:
             self.radioOperator.broadcast("s:0")
             time.sleep(2)
             self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
-            self.scout.update_weights(self.MAZE, self.robot, sigma = 0.4)
+            if self.scout.localization_type == "particle_filter":
+                self.scout.update_weights(self.MAZE, self.robot, sigma = 0.4)
+            else:
+                self.scout.predict_belief()
             while True:
                 if self.motorSergeant.reset:
                     print("resetting")
@@ -66,25 +69,31 @@ class General:
                             distance, direction = self.pathfinder.find_furthest_distance(self.robot)
                     else: 
                         distance, direction = self.pathfinder.find_furthest_distance(self.robot)
-                    if self.robot.distance_sensors["u0"]["reading"] > 2:
-                        self.motorSergeant.drive(1)
+                    if self.robot.distance_sensors["u0"]["reading"] > 3:
+                        self.motorSergeant.drive(2)
                         time.sleep(1)
                     self.motorSergeant.rotate(direction)
                     time.sleep(1)
                     self.motorSergeant.reset = False
                     self.motorSergeant.reset_cooldown = 3
+                    self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
                 else:
                     self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
                     self.motorSergeant.adjust(self.robot, self.scout.localized)
-                self.scout.predict()
-                self.scout.update_weights(self.MAZE, self.robot, sigma = 1)
-                neff = self.scout.compute_neff()
-                print(f"neff: {neff}")
-                if neff < 1250:
-                    print("resampling!")
-                    self.scout.resample()
-                self.scout.weighted_average()
-                self.update_maze()
+                if self.scout.localization_type == "particle_filter":
+                    self.scout.predict()
+                    self.scout.update_weights(self.MAZE, self.robot, sigma = 1)
+                    neff = self.scout.compute_neff()
+                    print(f"neff: {neff}")
+                    if neff < 1250:
+                        print("resampling!")
+                        self.scout.resample()
+                    self.scout.weighted_average()
+                    self.update_maze()
+                else:
+                    self.scout.predict_belief()
+                    self.scout.update_belief()
+                    estimated_position = self.scout.estimate_position()
                 #self.update_objective()
                 if not self.motorSergeant.reset:
                     self.motorSergeant.drive(3)
@@ -136,8 +145,8 @@ class General:
                 print(f"Aligning... Right diff: {right_diff}, Left diff: {left_diff}")
                 
                 # Calculate scaled rotation steps based on the difference, capped between min and max
-                right_rotation_step = max(min(abs(right_diff), max_rotation_step), min_rotation_step)
-                left_rotation_step = max(min(abs(left_diff), max_rotation_step), min_rotation_step)
+                right_rotation_step = 3
+                left_rotation_step = 3
                 
                 # Adjust rotation direction based on the differences
                 if right_diff > alignment_tolerance:
@@ -175,18 +184,43 @@ class General:
         # Draw the particles
         particle_color = (0, 0, 255)  # Color for the particles (blue)
         particle_radius = 5  # Radius of each particle's circle
+        if self.scout.localization_type == "particle_filter":
+            for particle in self.scout.particles:
+                particle_int_pos = (
+                    int(round(SETTINGS.border_pixels + particle.x * SETTINGS.ppi)),
+                    int(round(SETTINGS.border_pixels + particle.y * SETTINGS.ppi))
+                )
+                pygame.draw.circle(self.canvas, particle_color, particle_int_pos, particle_radius)
 
-        for particle in self.scout.particles:
-            particle_int_pos = (
-                int(round(SETTINGS.border_pixels + particle.x * SETTINGS.ppi)),
-                int(round(SETTINGS.border_pixels + particle.y * SETTINGS.ppi))
-            )
-            pygame.draw.circle(self.canvas, particle_color, particle_int_pos, particle_radius)
+            # Draw the average position (green dot) and direction (small line)
+            avg_x = self.scout.average_x
+            avg_y = self.scout.average_y
+            avg_theta = self.scout.average_theta
+        else:
+            for x in range(32):
+                for y in range(16):
+                    # Get the maximum belief for this grid cell (across all possible orientations)
+                    belief_value = np.max(self.scout.belief[y][x])
 
-        # Draw the average position (green dot) and direction (small line)
-        avg_x = self.scout.average_x
-        avg_y = self.scout.average_y
-        avg_theta = self.scout.average_theta
+                    # Map belief_value to color intensity (for visualization)
+                    # You can choose a color range: Low belief -> light, high belief -> dark
+                    color_intensity = int(255 * belief_value)  # Darker color for higher belief
+
+                    # Map the belief value to a color (could use a gradient here)
+                    belief_color = (color_intensity, 0, 255 - color_intensity)  # Green to Red gradient
+
+                    # Convert grid (x, y) to screen position
+                    screen_x = int(round(SETTINGS.border_pixels + x * SETTINGS.ppi * 3))
+                    screen_y = int(round(SETTINGS.border_pixels + y * SETTINGS.ppi * 3))
+
+                    # Draw a rectangle representing the belief of the grid cell
+                    pygame.draw.rect(self.canvas, belief_color, pygame.Rect(screen_x, screen_y, 3 * SETTINGS.ppi, 3 * SETTINGS.ppi))
+
+            # Draw the average position of belief (green dot)
+            # Compute the average belief position by finding the max belief in the grid
+            max_belief_position = np.unravel_index(np.argmax(self.scout.belief), self.scout.belief.shape[:2])
+            avg_x, avg_y = max_belief_position
+            avg_theta = self.scout.average_theta  # This can be based on your belief or set manually
 
         # Convert average (x, y) to screen position
         avg_pos = (
