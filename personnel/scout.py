@@ -247,16 +247,16 @@ class Scout:
         #             break
 
         # Inject particles at the center of each valid box
-        # for x in range(self.maze.size_x // 12):
-        #     for y in range(self.maze.size_y // 12):
-        #         if self.is_valid_position((x + 0.5) * 12, (y + 0.5) * 12):  # Check if the position is valid
-        #             # Place 4 particles for each cardinal direction
-        #             for theta in [0, 90, 180, 270]:
-        #                 # Place a particle at the center of the valid box
-        #                 center_x = (x + 0.5) * 12  # Center of the box in x direction (assuming 1ft by 1ft boxes)
-        #                 center_y = (y + 0.5) * 12  # Center of the box in y direction
-        #                 random_particle = Particle(center_x, center_y, theta, 1 / self.num_particles)
-        #                 new_particles[random.randint(0, N - 1)] = random_particle  # Replace an existing particle
+        for x in range(self.maze.size_x // 12):
+            for y in range(self.maze.size_y // 12):
+                if self.is_valid_position((x + 0.5) * 12, (y + 0.5) * 12):  # Check if the position is valid
+                    # Place 4 particles for each cardinal direction
+                    for theta in [0, 90, 180, 270]:
+                        # Place a particle at the center of the valid box
+                        center_x = (x + 0.5) * 12  # Center of the box in x direction (assuming 1ft by 1ft boxes)
+                        center_y = (y + 0.5) * 12  # Center of the box in y direction
+                        random_particle = Particle(center_x, center_y, theta, 1 / self.num_particles)
+                        new_particles[random.randint(0, N - 1)] = random_particle  # Replace an existing particle
 
         self.particles = new_particles  # Replace old particles with the new ones
         if self.is_localized():

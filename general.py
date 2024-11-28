@@ -318,13 +318,13 @@ class General:
     def block_detection(self, direction = 1):
         """ Checks for the presence of the block. returns boolean block. True if block is visible by robot. """
 
-        direction = -1
+        direction = 1
         #check readings for both front sensors, u0 is top sensor, u6 is the block facing sensor
         block = False
         while not block:
             self.recon.check_sensors(self.robot, ['u0','u6'], self.radioOperator)
             # Set the block boolean to True if the block is in front of the robot (if u0 value > u6 value )
-            if self.robot.distance_sensors["u0"]["reading"] - 5 > self.robot.distance_sensors["u6"]["reading"]:
+            if self.robot.distance_sensors["u0"]["reading"] - 7 > self.robot.distance_sensors["u6"]["reading"]:
                 print("Block Detected.")
                 block = True  
             else:
@@ -338,7 +338,7 @@ class General:
     def block_pickup(self):
         """ tries 3 times to pick up the block, on the fourth try it releases the servo arm and aborts. 
         returns boolean called parcel, True if block is on board. """
-        block_distance = 4 #Ideal distance between the robot and the block while actuating the servo (this is right when )
+        block_distance = 3 #Ideal distance between the robot and the block while actuating the servo (this is right when )
         servo_angle = 180  #set a servo target angle to close behind the block
         max_attempts = 3  # Maximum number of attempts to pick up the block
         attempt = 0  # Counter to track attempts
@@ -412,6 +412,10 @@ if __name__ == "__main__":
     general = General()
     np.random.seed(SETTINGS.floor_seed)
     general.initialize_maze()
-    #print(general.radioOperator.broadcast("u0,u1,u2,u3,u4,u5,m0,m1", response = True))
+    #while(True):
+    #    print(general.radioOperator.broadcast("u0,u1,u2,u3,u4,u5,m0,m1", response = True))
+    #    time.sleep(0.5)
+    #    general.motorSergeant.drive(3)
+    #    time.sleep(1)
     #general.courier()
     general.execute_mission()

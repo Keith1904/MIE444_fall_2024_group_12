@@ -65,31 +65,38 @@ class MotorSergeant:
                     self.drive(-0.5)
                     time.sleep(0.5)
                     self.rotate(-10)
+                    print("u4 too small")
                     break
                 elif sensor_id == 'u5':
                     self.drive(-0.5)
                     time.sleep(0.5)
                     self.rotate(10)
+                    print("u5 too small")
                     break
                 if sensor_id == "u0":
                     self.drive(-1)
                     self.reset = True
+                    print("u0 too small")
                     break
             elif 2 < reading < 6:
                 if sensor_id == "u4" and reading - 0.2 > distance_sensors_copy['u1']['reading']:
                     #self.drive(-0.5)
                     self.rotate(10)
+                    print("aligning right side")
                     break
                 elif sensor_id == "u5" and reading - 0.2 > distance_sensors_copy['u3']['reading']:
                     #self.drive(-0.5)              
                     self.rotate(-10)
+                    print("aligning left side")
                     break
             elif reading > 10 and sensor_id == "u1" or sensor_id == "u3":
                 if ((distance_sensors_copy["u1"]["reading"] > 10 and distance_sensors_copy["u4"]["reading"] > 10) or (distance_sensors_copy["u3"]["reading"] > 10 and distance_sensors_copy["u5"]["reading"] > 10)) and localized and self.reset_cooldown <= 0:
                     self.reset = True
+                    print("reset right side")
                     break
                 
             elif reading > distance_sensors_copy["u0"]["reading"] + 8 and self.reset_cooldown <= 0:
                 if (distance_sensors_copy["u1"]["reading"] > distance_sensors_copy["u0"]["reading"] + 6 and distance_sensors_copy["u4"]["reading"] > distance_sensors_copy["u0"]["reading"]) or (distance_sensors_copy["u3"]["reading"] > distance_sensors_copy["u0"]["reading"] + 6 and distance_sensors_copy["u5"]["reading"] > distance_sensors_copy["u0"]["reading"]) or (distance_sensors_copy["u1"]["reading"] > distance_sensors_copy["u0"]["reading"] and distance_sensors_copy["u4"]["reading"] > distance_sensors_copy["u0"]["reading"] + 6) or (distance_sensors_copy["u3"]["reading"] > distance_sensors_copy["u0"]["reading"] and distance_sensors_copy["u5"]["reading"] > distance_sensors_copy["u0"]["reading"] + 6):
                     self.reset = True
+                    print("reset left side")
                     break
