@@ -49,7 +49,7 @@ class General:
             self.update_maze()
             #self.wall_alignment()
             self.radioOperator.broadcast("s:0")
-            time.sleep(2)
+            time.sleep(1)
             self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
             if self.scout.localization_type == "particle_filter":
                 self.scout.update_weights(self.MAZE, self.robot, sigma = 0.4)
@@ -58,7 +58,7 @@ class General:
             while True:
                 if self.motorSergeant.reset:
                     print("resetting")
-                    if False:
+                    if self.scout.localized:
                         if self.objective == "lz":
                             print("Heading to lz!")
                             direction = self.pathfinder.get_turn_angle((self.scout.average_x, self.scout.average_y), self.scout.average_theta, (0, 0))
@@ -94,10 +94,10 @@ class General:
                     self.scout.predict_belief()
                     self.scout.update_belief()
                     estimated_position = self.scout.estimate_position()
-                #self.update_objective()
+                self.update_objective()
                 if not self.motorSergeant.reset:
                     self.motorSergeant.drive(3)
-                    time.sleep(2)
+                    time.sleep(1)
                     self.motorSergeant.reset_cooldown -= 1
         if self.mode == 'manual':
             self.update_maze()
@@ -338,7 +338,7 @@ class General:
     def block_pickup(self):
         """ tries 3 times to pick up the block, on the fourth try it releases the servo arm and aborts. 
         returns boolean called parcel, True if block is on board. """
-        block_distance = 2.5 #Ideal distance between the robot and the block while actuating the servo (this is right when )
+        block_distance = 4 #Ideal distance between the robot and the block while actuating the servo (this is right when )
         servo_angle = 180  #set a servo target angle to close behind the block
         max_attempts = 3  # Maximum number of attempts to pick up the block
         attempt = 0  # Counter to track attempts
@@ -353,7 +353,7 @@ class General:
                 print(f"Servo arm reached {servo_angle} degrees")
                 
                 # Check if the block is secured
-                if u6 <= 1.6:
+                if u6 <= 2.5:
                     #print("Block on board!")
                     return True  # Block successfully picked up
 

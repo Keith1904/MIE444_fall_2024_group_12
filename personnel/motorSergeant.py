@@ -25,7 +25,7 @@ class MotorSergeant:
             response = ""
             while not response:
                 response = self.radioOperator.broadcast("r0:" + str(chunk_angle), response=True)
-                time.sleep(0.5)
+                time.sleep(1)
             remaining_angle -= chunk_angle
 
         # Rotate the remaining angle (if any)
@@ -64,12 +64,12 @@ class MotorSergeant:
                 if sensor_id == 'u4':
                     self.drive(-0.5)
                     time.sleep(0.5)
-                    self.rotate(-5)
+                    self.rotate(-10)
                     break
                 elif sensor_id == 'u5':
                     self.drive(-0.5)
                     time.sleep(0.5)
-                    self.rotate(5)
+                    self.rotate(10)
                     break
                 if sensor_id == "u0":
                     self.drive(-1)
@@ -78,11 +78,11 @@ class MotorSergeant:
             elif 2 < reading < 6:
                 if sensor_id == "u4" and reading - 0.2 > distance_sensors_copy['u1']['reading']:
                     #self.drive(-0.5)
-                    self.rotate(5)
+                    self.rotate(10)
                     break
                 elif sensor_id == "u5" and reading - 0.2 > distance_sensors_copy['u3']['reading']:
                     #self.drive(-0.5)              
-                    self.rotate(-5)
+                    self.rotate(-10)
                     break
             elif reading > 10 and sensor_id == "u1" or sensor_id == "u3":
                 if ((distance_sensors_copy["u1"]["reading"] > 10 and distance_sensors_copy["u4"]["reading"] > 10) or (distance_sensors_copy["u3"]["reading"] > 10 and distance_sensors_copy["u5"]["reading"] > 10)) and localized and self.reset_cooldown <= 0:
@@ -90,6 +90,6 @@ class MotorSergeant:
                     break
                 
             elif reading > distance_sensors_copy["u0"]["reading"] + 8 and self.reset_cooldown <= 0:
-                if (distance_sensors_copy["u1"]["reading"] > distance_sensors_copy["u0"]["reading"] + 8 and distance_sensors_copy["u4"]["reading"] > distance_sensors_copy["u0"]["reading"] or distance_sensors_copy["u3"]["reading"] > distance_sensors_copy["u0"]["reading"] + 8 and distance_sensors_copy["u5"]["reading"] > distance_sensors_copy["u0"]["reading"]) or (distance_sensors_copy["u1"]["reading"] > distance_sensors_copy["u0"]["reading"] and distance_sensors_copy["u4"]["reading"] > distance_sensors_copy["u0"]["reading"] + 8 or distance_sensors_copy["u3"]["reading"] > distance_sensors_copy["u0"]["reading"] and distance_sensors_copy["u5"]["reading"] > distance_sensors_copy["u0"]["reading"] + 8):
+                if (distance_sensors_copy["u1"]["reading"] > distance_sensors_copy["u0"]["reading"] + 6 and distance_sensors_copy["u4"]["reading"] > distance_sensors_copy["u0"]["reading"]) or (distance_sensors_copy["u3"]["reading"] > distance_sensors_copy["u0"]["reading"] + 6 and distance_sensors_copy["u5"]["reading"] > distance_sensors_copy["u0"]["reading"]) or (distance_sensors_copy["u1"]["reading"] > distance_sensors_copy["u0"]["reading"] and distance_sensors_copy["u4"]["reading"] > distance_sensors_copy["u0"]["reading"] + 6) or (distance_sensors_copy["u3"]["reading"] > distance_sensors_copy["u0"]["reading"] and distance_sensors_copy["u5"]["reading"] > distance_sensors_copy["u0"]["reading"] + 6):
                     self.reset = True
                     break

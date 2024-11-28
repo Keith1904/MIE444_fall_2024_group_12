@@ -136,7 +136,7 @@ class Scout:
         """
         total_weight = 0.0
         sensor_ids = ["u0", "u1", "u2", "u3", "u4", "u5"]
-        wall_threshold = 4.0  # Distance threshold for detecting a wall
+        wall_threshold = 5.0  # Distance threshold for detecting a wall
 
         for particle in self.particles:
             # Initialize weight to a default value
@@ -158,10 +158,10 @@ class Scout:
 
                         if simulated_wall == actual_wall:
                             # If both readings agree, give higher weight
-                            particle.weight *= 0.9
+                            particle.weight *= 1.0
                         else:
                             # Penalize if they disagree
-                            particle.weight *= 0.1
+                            particle.weight *= 0.05
                 elif self.update_type == "wall":
                     # Compare wall presence between simulated and actual readings
                     for sensor_id in sensor_ids:
@@ -247,16 +247,16 @@ class Scout:
         #             break
 
         # Inject particles at the center of each valid box
-        for x in range(self.maze.size_x // 12):
-            for y in range(self.maze.size_y // 12):
-                if self.is_valid_position((x + 0.5) * 12, (y + 0.5) * 12):  # Check if the position is valid
-                    # Place 4 particles for each cardinal direction
-                    for theta in [0, 90, 180, 270]:
-                        # Place a particle at the center of the valid box
-                        center_x = (x + 0.5) * 12  # Center of the box in x direction (assuming 1ft by 1ft boxes)
-                        center_y = (y + 0.5) * 12  # Center of the box in y direction
-                        random_particle = Particle(center_x, center_y, theta, 1 / self.num_particles)
-                        new_particles[random.randint(0, N - 1)] = random_particle  # Replace an existing particle
+        # for x in range(self.maze.size_x // 12):
+        #     for y in range(self.maze.size_y // 12):
+        #         if self.is_valid_position((x + 0.5) * 12, (y + 0.5) * 12):  # Check if the position is valid
+        #             # Place 4 particles for each cardinal direction
+        #             for theta in [0, 90, 180, 270]:
+        #                 # Place a particle at the center of the valid box
+        #                 center_x = (x + 0.5) * 12  # Center of the box in x direction (assuming 1ft by 1ft boxes)
+        #                 center_y = (y + 0.5) * 12  # Center of the box in y direction
+        #                 random_particle = Particle(center_x, center_y, theta, 1 / self.num_particles)
+        #                 new_particles[random.randint(0, N - 1)] = random_particle  # Replace an existing particle
 
         self.particles = new_particles  # Replace old particles with the new ones
         if self.is_localized():
