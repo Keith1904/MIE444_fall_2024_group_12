@@ -64,7 +64,7 @@ class MotorSergeant:
                 if sensor_id == 'u4':
                     self.drive(-0.5)
                     time.sleep(0.5)
-                    self.rotate(-10)
+                    self.rotate(-5)
                     print("u4 too small")
                     break
                 elif sensor_id == 'u5':
@@ -86,7 +86,7 @@ class MotorSergeant:
                     break
                 elif sensor_id == "u5" and reading - 0.2 > distance_sensors_copy['u3']['reading']:
                     #self.drive(-0.5)              
-                    self.rotate(-10)
+                    self.rotate(-5)
                     print("aligning left side")
                     break
             elif reading > 10 and sensor_id == "u1" or sensor_id == "u3":

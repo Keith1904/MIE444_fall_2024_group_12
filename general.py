@@ -41,7 +41,7 @@ class General:
         self.mode = "auto"
         self.last_input = ''
         self.objective = "lz"
-        self.dropoff_point = (5, 0)
+        self.dropoff_point = (7, 0)
         
         
     def execute_mission(self):
@@ -96,7 +96,10 @@ class General:
                     estimated_position = self.scout.estimate_position()
                 self.update_objective()
                 if not self.motorSergeant.reset:
-                    self.motorSergeant.drive(3)
+                    if self.robot.distance_sensors["u4"]["reading"] > self.robot.distance_sensors["u0"]["reading"] or self.robot.distance_sensors["u5"]["reading"] > self.robot.distance_sensors["u0"]["reading"] and self.motorSergeant.reset_cooldown <= 0:
+                        self.motorSergeant.drive(1)
+                    else: 
+                        self.motorSergeant.drive(3)
                     time.sleep(1)
                     self.motorSergeant.reset_cooldown -= 1
         if self.mode == 'manual':
@@ -253,7 +256,6 @@ class General:
             if self.objective == "lz":
                if current_location == (0, 0) or current_location == (0, 1) or current_location == (1, 0) or current_location == (1, 1):
                    print("Arrived at loading zone!")
-                   self.courier()
                    self.radioOperator.broadcast("L0:00")
                    self.courier()
                    self.objective = "dp"
@@ -280,12 +282,12 @@ class General:
             while while_count <= 3:  # Attempt up to 3 times to find the block
                 while_count += 1  # Increment the attempt counter
                 #print(f"Attempt {while_count} to detect the block.")
-                direction = 1
+                direction = -1
                 if self.scout.localized:
                     current_location = (self.scout.average_x // 12, self.scout.average_y // 12)
                     if current_location == (2, 0) or current_location == (1, 0):
                         direction = -1
-                block = self.block_detection(direction = -1)  # Call block detection logic
+                block = self.block_detection(direction)  # Call block detection logic
                 self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
                 self.scout.predict()
                 self.scout.update_weights(self.MAZE, self.robot, sigma = 0.4)
@@ -318,7 +320,6 @@ class General:
     def block_detection(self, direction = 1):
         """ Checks for the presence of the block. returns boolean block. True if block is visible by robot. """
 
-        direction = 1
         #check readings for both front sensors, u0 is top sensor, u6 is the block facing sensor
         block = False
         while not block:
@@ -348,6 +349,8 @@ class General:
             
             if u6 <= block_distance:
                 # Actuate the servo arm to grasp the block
+                self.motorSergeant.drive(1)
+                time.sleep(0.5)
                 self.radioOperator.broadcast(f"s:{servo_angle}")
                 time.sleep(5)
                 print(f"Servo arm reached {servo_angle} degrees")
@@ -415,7 +418,12 @@ if __name__ == "__main__":
     #while(True):
     #    print(general.radioOperator.broadcast("u0,u1,u2,u3,u4,u5,m0,m1", response = True))
     #    time.sleep(0.5)
-    #    general.motorSergeant.drive(3)
-    #    time.sleep(1)
+    #general.motorSergeant.drive(10)
+    #time.sleep(2)
+    #general.motorSergeant.drive(-5)
+    #time.sleep(2)
+    #general.motorSergeant.rotate(90)
+    #time.sleep(1)
+    #general.motorSergeant.rotate(-90)
     #general.courier()
     general.execute_mission()

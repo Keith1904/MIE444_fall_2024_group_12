@@ -309,7 +309,21 @@ class Scout:
         # Update the stored average position
         self.average_x = weighted_x
         self.average_y = weighted_y
-        self.average_theta = weighted_theta
+        self.average_theta = self.weighted_average_angle()
+        
+    def weighted_average_angle(self):
+        sum_x = 0
+        sum_y = 0
+        total_weight = 0
+        for particle in self.particles:
+            angle = math.radians(particle.theta)
+            weight = particle.weight
+            sum_x += weight * math.cos(angle)
+            sum_y += weight * math.sin(angle)
+            total_weight += weight
+
+        avg_angle = math.atan2(-sum_y / total_weight, sum_x / total_weight)
+        return avg_angle
 
     def position_standard_deviation(self):
 
