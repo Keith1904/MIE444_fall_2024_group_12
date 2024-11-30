@@ -7,10 +7,10 @@ motorSergeant - Issues all actuation commands to motors.
 
 radioOperator - Communicates with Bluetooth mnodule.
 
-recon - Collects sensor data and forwards it to scout and sentry.
+recon - Collects sensor data.
 
-scout - Performs Monte Carlo localization algorithm and instructs motorSergeant on where to go.
+scout - Performs particle filter localization algorithm.
 
-pathfinder - Responsible for avoiding obstacles and issuing emergency stops.
+pathfinder - Determines what path to travel in to reach objectives.
 
 NO PUSHING TO MAIN
