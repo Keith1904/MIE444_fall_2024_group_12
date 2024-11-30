@@ -34,7 +34,7 @@ class General:
             TRANSMIT_PAUSE=SETTINGS.TRANSMIT_PAUSE
             )
         self.pathfinder = Pathfinder(SETTINGS.walls)
-        self.scout = Scout(2500, self.MAZE, self.robot, update_type = "distance", localization_type = "particle_filter", maze_walls = SETTINGS.walls)
+        self.scout = Scout(2500, self.MAZE, self.robot)
         self.motorSergeant = MotorSergeant(self.radioOperator)
         self.recon = Recon()
         time.sleep(3)
@@ -45,19 +45,24 @@ class General:
         
         
     def execute_mission(self):
+        '''Main function to avoid obstacles, localize, pick up the block and drop it off.'''
         if self.mode == 'auto':
+            
+            # One-time setup: lift the servo arm and an initial weight update for the particle filter
             self.update_maze()
-            #self.wall_alignment()
             self.radioOperator.broadcast("s:0")
             time.sleep(1)
             self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
-            if self.scout.localization_type == "particle_filter":
-                self.scout.update_weights(self.MAZE, self.robot, sigma = 0.4)
-            else:
-                self.scout.predict_belief()
+            self.scout.update_weights(self.MAZE, self.robot)
+           
+            # main loop
             while True:
+                
+                # reset is set to True at the beginning of a run or whenever the robot reaches an intersection where a decision to turn must be made
                 if self.motorSergeant.reset:
                     print("resetting")
+                    
+                    # If localized, determine the direction that needs to be travelled to head to the loading zone or dropoff point
                     if self.scout.localized:
                         if self.objective == "lz":
                             print("Heading to lz!")
@@ -67,34 +72,48 @@ class General:
                             direction = self.pathfinder.get_turn_angle((self.scout.average_x, self.scout.average_y), self.scout.average_theta, self.dropoff_point)
                         if direction == None:
                             distance, direction = self.pathfinder.find_furthest_distance(self.robot)
+                    
+                    # If not localized, head in the furthest direction
                     else: 
                         distance, direction = self.pathfinder.find_furthest_distance(self.robot)
+                    
+                    # Move forward 2 inches before turning to avoid clipping walls
                     if self.robot.distance_sensors["u0"]["reading"] > 3:
                         self.motorSergeant.drive(2)
                         time.sleep(1)
                     self.motorSergeant.rotate(direction)
                     time.sleep(1)
+                    
+                    # Set reset to False and put a reset cooldown so the robot does not turn for at least another 3 steps
                     self.motorSergeant.reset = False
                     self.motorSergeant.reset_cooldown = 3
                     self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
-                else:
+                
+                # Perform a small heading adjustment if necessary to avoid collision with walls
+                else:                   
                     self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
                     self.motorSergeant.adjust(self.robot, self.scout.localized)
-                if self.scout.localization_type == "particle_filter":
-                    self.scout.predict()
-                    self.scout.update_weights(self.MAZE, self.robot, sigma = 1)
-                    neff = self.scout.compute_neff()
-                    print(f"neff: {neff}")
-                    if neff < 1250:
-                        print("resampling!")
-                        self.scout.resample()
-                    self.scout.weighted_average()
-                    self.update_maze()
-                else:
-                    self.scout.predict_belief()
-                    self.scout.update_belief()
-                    estimated_position = self.scout.estimate_position()
+                
+                # Perform prediction and update steps for the particle filter
+                self.scout.predict()
+                self.scout.update_weights(self.MAZE, self.robot)
+                
+                # Perform resample step if the effective number is less than half of the total particles
+                neff = self.scout.compute_neff()
+                print(f"neff: {neff}")
+                if neff < 1250:
+                    print("resampling!")
+                    self.scout.resample()
+                
+                # Determine the estimated position and heading based on the particle filter
+                self.scout.weighted_average()
+                
+                # Update the localization visualization
+                self.update_maze()
+                
+                # Update the current objective i.e. if arrived at loading zone or dropoff point
                 self.update_objective()
+                
                 if not self.motorSergeant.reset:
                     if self.robot.distance_sensors["u4"]["reading"] > self.robot.distance_sensors["u0"]["reading"] or self.robot.distance_sensors["u5"]["reading"] > self.robot.distance_sensors["u0"]["reading"] and self.motorSergeant.reset_cooldown <= 0:
                         self.motorSergeant.drive(1)
@@ -102,10 +121,12 @@ class General:
                         self.motorSergeant.drive(3)
                     time.sleep(1)
                     self.motorSergeant.reset_cooldown -= 1
+        
+        # Manual control mode
         if self.mode == 'manual':
             self.update_maze()
             self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
-            self.scout.update_weights(self.MAZE, self.robot, sigma = 0.5)
+            self.scout.update_weights(self.MAZE, self.robot)
             while True:
                 self.update_maze()
                 print("Enter a command: ")
@@ -124,6 +145,7 @@ class General:
                     self.scout.resample()
                     
     def wall_alignment(self):
+        '''Wall alignment function'''
         print("Aligning with wall...")
         
         # Define a base tolerance for alignment
@@ -166,6 +188,7 @@ class General:
                     self.motorSergeant.rotate(-left_rotation_step)
 
     def initialize_maze(self):
+        '''Initializes maze visualization'''
         self.MAZE.import_walls()
         self.MAZE.generate_floor()
         CANVAS_WIDTH = self.MAZE.size_x * SETTINGS.ppi + SETTINGS.border_pixels * 2
@@ -174,6 +197,7 @@ class General:
         self.canvas = pygame.display.set_mode([CANVAS_WIDTH, CANVAS_HEIGHT])
 
     def update_maze(self):
+        '''Updates maze visualization'''
         game_events = pygame.event.get()
         keypress = pygame.key.get_pressed()
         self.canvas.fill(SETTINGS.background_color)
@@ -187,43 +211,17 @@ class General:
         # Draw the particles
         particle_color = (0, 0, 255)  # Color for the particles (blue)
         particle_radius = 5  # Radius of each particle's circle
-        if self.scout.localization_type == "particle_filter":
-            for particle in self.scout.particles:
-                particle_int_pos = (
-                    int(round(SETTINGS.border_pixels + particle.x * SETTINGS.ppi)),
-                    int(round(SETTINGS.border_pixels + particle.y * SETTINGS.ppi))
-                )
-                pygame.draw.circle(self.canvas, particle_color, particle_int_pos, particle_radius)
+        for particle in self.scout.particles:
+            particle_int_pos = (
+                int(round(SETTINGS.border_pixels + particle.x * SETTINGS.ppi)),
+                int(round(SETTINGS.border_pixels + particle.y * SETTINGS.ppi))
+            )
+            pygame.draw.circle(self.canvas, particle_color, particle_int_pos, particle_radius)
 
-            # Draw the average position (green dot) and direction (small line)
-            avg_x = self.scout.average_x
-            avg_y = self.scout.average_y
-            avg_theta = self.scout.average_theta
-        else:
-            for x in range(32):
-                for y in range(16):
-                    # Get the maximum belief for this grid cell (across all possible orientations)
-                    belief_value = np.max(self.scout.belief[y][x])
-
-                    # Map belief_value to color intensity (for visualization)
-                    # You can choose a color range: Low belief -> light, high belief -> dark
-                    color_intensity = int(255 * belief_value)  # Darker color for higher belief
-
-                    # Map the belief value to a color (could use a gradient here)
-                    belief_color = (color_intensity, 0, 255 - color_intensity)  # Green to Red gradient
-
-                    # Convert grid (x, y) to screen position
-                    screen_x = int(round(SETTINGS.border_pixels + x * SETTINGS.ppi * 3))
-                    screen_y = int(round(SETTINGS.border_pixels + y * SETTINGS.ppi * 3))
-
-                    # Draw a rectangle representing the belief of the grid cell
-                    pygame.draw.rect(self.canvas, belief_color, pygame.Rect(screen_x, screen_y, 3 * SETTINGS.ppi, 3 * SETTINGS.ppi))
-
-            # Draw the average position of belief (green dot)
-            # Compute the average belief position by finding the max belief in the grid
-            max_belief_position = np.unravel_index(np.argmax(self.scout.belief), self.scout.belief.shape[:2])
-            avg_x, avg_y = max_belief_position
-            avg_theta = self.scout.average_theta  # This can be based on your belief or set manually
+        # Draw the average position (green dot) and direction (small line)
+        avg_x = self.scout.average_x
+        avg_y = self.scout.average_y
+        avg_theta = self.scout.average_theta
 
         # Convert average (x, y) to screen position
         avg_pos = (
@@ -251,6 +249,7 @@ class General:
         pygame.display.flip()
     
     def update_objective(self):
+        '''Updates current objective, i.e. loading zone, dropoff point'''
         if self.scout.localized:
             current_location = (self.scout.average_x // 12, self.scout.average_y // 12)
             if self.objective == "lz":
@@ -263,7 +262,7 @@ class General:
                 if current_location == self.dropoff_point:
                     print("Arrived at dropoff point!")
                     self.radioOperator.broadcast("s:0")
-                    self.motorSergeant.drive(-2)
+                    self.motorSergeant.drive(2)
                     time.sleep(2)
                     self.radioOperator.broadcast("D0:00")
     
@@ -271,6 +270,7 @@ class General:
 
     #Block Detection and Pick-up System
     def courier(self):
+        '''Main function for block detection and pickup'''
         # '''Checks for the block, picks up the block, checks if the block is on board. If the block isn't detected after 3 attempts, '''
         block = False  #Intialize a boolean value for block detection. If True, block is visible from the front of the robot.
         while_count = 0  # Initialize a counter to track the number of while loop iterations
@@ -282,15 +282,17 @@ class General:
             while while_count <= 3:  # Attempt up to 3 times to find the block
                 while_count += 1  # Increment the attempt counter
                 #print(f"Attempt {while_count} to detect the block.")
-                direction = -1
+                direction = 1
                 if self.scout.localized:
                     current_location = (self.scout.average_x // 12, self.scout.average_y // 12)
                     if current_location == (2, 0) or current_location == (1, 0):
                         direction = -1
                 block = self.block_detection(direction)  # Call block detection logic
+                
+                # After detecting the block and before picking it up, update the particle filter
                 self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
                 self.scout.predict()
-                self.scout.update_weights(self.MAZE, self.robot, sigma = 0.4)
+                self.scout.update_weights(self.MAZE, self.robot)
                 neff = self.scout.compute_neff()
                 print(f"neff: {neff}")
                 if neff < 1250:
@@ -298,6 +300,7 @@ class General:
                     self.scout.resample()
                 self.scout.weighted_average()
                 self.update_maze()
+                
                 if block == True:  # If block is detected
                     #print("Block detected! Initiating pickup sequence.")
                     #self.block_pickup()     # Call block pickup logic
@@ -378,25 +381,6 @@ class General:
         print("Max attempts reached. Releasing servo arm.")
         self.radioOperator.broadcast("s:00")  # open the servo arm by returning it to zero degrees
         return False  # Block pickup failed
-
-
-
-
-
-
-
-
-
-
-            
-
-
-
-
-
-
-    
-        
         
 class Robot:
     def __init__(self, distance_sensors, motor_encoders, ir_sensor):
@@ -415,15 +399,4 @@ if __name__ == "__main__":
     general = General()
     np.random.seed(SETTINGS.floor_seed)
     general.initialize_maze()
-    #while(True):
-    #    print(general.radioOperator.broadcast("u0,u1,u2,u3,u4,u5,m0,m1", response = True))
-    #    time.sleep(0.5)
-    #general.motorSergeant.drive(10)
-    #time.sleep(2)
-    #general.motorSergeant.drive(-5)
-    #time.sleep(2)
-    #general.motorSergeant.rotate(90)
-    #time.sleep(1)
-    #general.motorSergeant.rotate(-90)
-    #general.courier()
     general.execute_mission()

@@ -17,7 +17,7 @@ class Pathfinder:
         other_sensors_below_12 = all(current_readings[sensor_id] < 12 for sensor_id in sensor_ids if sensor_id != 'u2')
         
         if other_sensors_below_12:
-            # If the condition is met, return u1's distance and direction
+            # If the condition is met, return u2's distance and direction
             furthest_distance = current_readings['u2']
             furthest_direction = robot.distance_sensors['u2']['rotation']
         else:

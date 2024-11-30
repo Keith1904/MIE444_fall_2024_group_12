@@ -41,16 +41,6 @@ class MotorSergeant:
 
     def stop(self):
         self.radioOperator.broadcast("xx")
-        
-    def movement_in_progress(self, robot):
-        prev_m0 = robot.motor_encoders["m0"]["previous_reading"]
-        prev_m1 = robot.motor_encoders["m1"]["previous_reading"]
-        curr_m0 = robot.motor_encoders["m0"]["reading"]
-        curr_m1 = robot.motor_encoders["m1"]["reading"]
-        
-        if curr_m0 != prev_m0 or curr_m1 != prev_m1:
-            return True
-        return False
     
     def adjust(self, robot, localized):
         distance_sensors_copy = robot.distance_sensors.copy()
