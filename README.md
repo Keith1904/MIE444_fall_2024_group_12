@@ -5,7 +5,7 @@ general - Interfaces with all other classes and coordinates all operations.
 
 motorSergeant - Issues all actuation commands to motors.
 
-radioOperator - Communicates with Bluetooth mnodule.
+radioOperator - Communicates with Bluetooth module.
 
 recon - Collects sensor data.
 
