@@ -138,7 +138,7 @@ class General:
                     time.sleep(3)
                 self.recon.check_sensors(self.robot, ['u0','u1', 'u2', 'u3', 'u4', 'u5', 'm0', 'm1'], self.radioOperator)
                 self.scout.predict()
-                self.scout.update_weights(self.MAZE, self.robot, sigma = 0.2)
+                self.scout.update_weights(self.MAZE, self.robot)
                 neff = self.scout.compute_neff()
                 if neff < 2500:
                     print("resampling!")
