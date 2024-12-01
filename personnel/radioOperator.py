@@ -39,15 +39,19 @@ class RadioOperator:
         except serial.SerialException:
             print(f'Serial connection was refused.\nEnsure {PORT_SERIAL} is the correct port and nothing else is connected to it.')
             
-    def broadcast(self, data):
+    def broadcast(self, data, response = False):
         while self.line_busy:
             time.sleep(0.1)
         self.line_busy = True
         packet_tx = self.packetize(data)
+        print(f"transmitting this: {packet_tx}")
         self.transmit(packet_tx)
-        response =  self.receive()
+        if response:
+            response =  self.receive()
+            self.line_busy = False
+            return response
         self.line_busy = False
-        return response
+        
  
     # Wrapper functions
     def transmit(self, data):
@@ -108,7 +112,7 @@ class RadioOperator:
         response_raw = ''
         while time.time() < start_time + self.TIMEOUT_SERIAL:
             if self.SER.in_waiting:
-                response_char = self.SER.read().decode('ascii')
+                response_char = self.SER.read().decode('utf-8', errors='ignore')
                 if response_char == self.FRAMEEND:
                     response_raw += response_char
                     break
