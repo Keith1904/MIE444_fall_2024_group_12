@@ -59,10 +59,6 @@ byte arrowLeft[8] = {
   B00000
 };
 
-// Bluetooth Serial Communication Pins
-//int BT_RX_Pin = 0;
-//int BT_TX_Pin = 1;
-
 // DC Motor Encoder Outputs
 int DCM1_EncA_Pin = 3;
 int DCM2_EncA_Pin = 2;
@@ -71,24 +67,28 @@ int DCM2_EncB_Pin = 5;
 
 // TOFs Pins
 VL53L0X tof0;
-VL53L0X tof1;
-VL53L0X tof2;
-VL53L0X tof3;
-VL53L0X tof4;
-VL53L0X tof5;
 VL53L0X tof6;
-const uint8_t sensorAddresses[] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36};
+const uint8_t sensorAddresses[] = {0x30, 0x31};
 
+//FRONT TOP
 int XSHUT_PIN0 = 6;
-int XSHUT_PIN1 = 7;
-int XSHUT_PIN2 = 8;
-int XSHUT_PIN3 = 9;
-int XSHUT_PIN4 = A3;
-int XSHUT_PIN5 = A1;
-int XSHUT_PIN6 = 10; 
-
-// Infrared Output Pin
-// int IR_Out_Pin = 11;
+//FRONT BOTTOM
+int XSHUT_PIN6 = 10;
+//RIGHT BACK
+int U1_TRIG_PIN = 7;
+int U1_ECHO_PIN = A2;
+//BACK
+int U2_TRIG_PIN = 8;
+int U2_ECHO_PIN = 9;
+//LEFT BACK
+int U3_TRIG_PIN = A1;
+int U3_ECHO_PIN = 11;
+//RIGHT FRONT
+int U4_TRIG_PIN = 8;
+int U4_ECHO_PIN = A0;
+//LEFT FRONT
+int U5_TRIG_PIN = 8;
+int U5_ECHO_PIN = A3; 
 
 // Actuation Arduino Serial Communication Pins
 int Ard_RX_Pin = 13;
@@ -99,10 +99,9 @@ float V_Sound = 0.0135; //Velocity of sounds in in/us
 float Wheel_Dia = 2.55906; //Wheel diameter in inches
 int Enc_Res = 11; //Encoder pulses per full revolution
 int Gear_Ratio = 34; //DC motor gear ratio
-float Dist_Per_Pulse_M1 = 0.015; //Distance travelled per encoder pulse in inches for M1
-float Dist_Per_Pulse_M2 = 0.015; //Distance travelled per encoder pulse in inches for M2
+float Dist_Per_Pulse_M1 = 0.012; //Distance travelled per encoder pulse in inches for M1
+float Dist_Per_Pulse_M2 = 0.012; //Distance travelled per encoder pulse in inches for M2
 float Wheel_Dist = 7.25; //wheel to wheel distance in inches
-//int Motor_Speed = 50; //motor speed
 
 // Array to store US/DRIVE command
 const byte Num_Char = 32; //Size of byte array
@@ -137,28 +136,36 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(DCM1_EncA_Pin), DCM1_Enc_Update, CHANGE); 
   attachInterrupt(digitalPinToInterrupt(DCM2_EncA_Pin), DCM2_Enc_Update, CHANGE); 
 
+  // I/O assignment
   pinMode(XSHUT_PIN0, OUTPUT);
-  pinMode(XSHUT_PIN1, OUTPUT);
-  pinMode(XSHUT_PIN2, OUTPUT);
-  pinMode(XSHUT_PIN3, OUTPUT);
-  pinMode(XSHUT_PIN4, OUTPUT);
-  pinMode(XSHUT_PIN5, OUTPUT);
   pinMode(XSHUT_PIN6, OUTPUT);
+  pinMode(U1_TRIG_PIN, OUTPUT);
+  pinMode(U1_ECHO_PIN, INPUT);
+  pinMode(U2_TRIG_PIN, OUTPUT);
+  pinMode(U2_ECHO_PIN, INPUT);
+  pinMode(U3_TRIG_PIN, OUTPUT);
+  pinMode(U3_ECHO_PIN, INPUT);
+  pinMode(U4_TRIG_PIN, OUTPUT);
+  pinMode(U4_ECHO_PIN, INPUT);
+  pinMode(U5_TRIG_PIN, OUTPUT);
+  pinMode(U5_ECHO_PIN, INPUT);
 
-  // Start with the sensor enabled
-  digitalWrite(XSHUT_PIN1, LOW);
-  digitalWrite(XSHUT_PIN2, LOW);
-  digitalWrite(XSHUT_PIN3, LOW);
-  digitalWrite(XSHUT_PIN4, LOW);
-  digitalWrite(XSHUT_PIN5, LOW);
+  // explicitly set all output pins to LOW
+  digitalWrite(XSHUT_PIN0, LOW);
   digitalWrite(XSHUT_PIN6, LOW);
-  digitalWrite(XSHUT_PIN0, HIGH);
-  delay(10);  // Allow sensor to power up
+  digitalWrite(U1_TRIG_PIN, LOW);
+  digitalWrite(U2_TRIG_PIN, LOW);
+  digitalWrite(U3_TRIG_PIN, LOW);
+  digitalWrite(U4_TRIG_PIN, LOW);
+  digitalWrite(U5_TRIG_PIN, LOW);
 
   //Serial.println("Starting TOF Sensor...");
   
   Wire.begin();
   Wire.setClock(50000);
+
+  digitalWrite(XSHUT_PIN0, HIGH);
+  delay(10);  // Allow sensor to power up
   
   if (!tof0.init()) {
     //Serial.println("Failed to detect TOF0 sensor! Check wiring.");
@@ -167,61 +174,6 @@ void setup() {
   tof0.setAddress(sensorAddresses[0]);
   tof0.setTimeout(500);
   //Serial.println("TOF0 sensor initialized successfully.");
-
-  digitalWrite(XSHUT_PIN1, HIGH);
-  delay(10);  // Allow sensor to power up
-
-  if (!tof1.init()) {
-    //Serial.println("Failed to detect TOF1 sensor! Check wiring.");
-    while (1);
-  }
-  tof1.setAddress(sensorAddresses[1]);
-  tof1.setTimeout(500);
-  //Serial.println("TOF1 sensor initialized successfully."); 
-
-  digitalWrite(XSHUT_PIN2, HIGH);
-  delay(10);  // Allow sensor to power up 
-
-  if (!tof2.init()) {
-    //Serial.println("Failed to detect TOF2 sensor! Check wiring.");
-    while (1);
-  }
-  tof2.setAddress(sensorAddresses[2]);
-  tof2.setTimeout(500);
-  //Serial.println("TOF2 sensor initialized successfully.");
-
-  digitalWrite(XSHUT_PIN3, HIGH);
-  delay(10);  // Allow sensor to power up
-
-  if (!tof3.init()) {
-    //Serial.println("Failed to detect TOF3 sensor! Check wiring.");
-    while (1);
-  }
-  tof3.setAddress(sensorAddresses[3]);
-  tof3.setTimeout(500);
-  //Serial.println("TOF3 sensor initialized successfully."); 
-
-  digitalWrite(XSHUT_PIN4, HIGH);
-  delay(10);  // Allow sensor to power up
-
-  if (!tof4.init()) {
-    //Serial.println("Failed to detect TOF4 sensor! Check wiring.");
-    while (1);
-  }
-  tof4.setAddress(sensorAddresses[1]);
-  tof4.setTimeout(500);
-  //Serial.println("TOF4 sensor initialized successfully.");
-
-  digitalWrite(XSHUT_PIN5, HIGH);
-  delay(10);  // Allow sensor to power up
-
-  if (!tof5.init()) {
-    //Serial.println("Failed to detect TOF5 sensor! Check wiring.");
-    while (1);
-  }
-  tof5.setAddress(sensorAddresses[5]);
-  tof5.setTimeout(500);
-  //Serial.println("TOF5 sensor initialized successfully.");
 
   digitalWrite(XSHUT_PIN6, HIGH);
   delay(10);  // Allow sensor to power up
@@ -234,38 +186,26 @@ void setup() {
   tof6.setTimeout(500);
   //Serial.println("TOF6 sensor initialized successfully.");
 
-
   ArdSerial.write("[M1:0,M2:0]");
   Receive_Com[0] = '\0';
 
   //LCD Setup 
-  //Wire.begin();
-  //Wire.setClock(50000);  // Set I2C speed to 50kHz
   lcd.begin(16, 2);
   lcd.backlight();
-  lcd.print("Hello!");
   //lcd.clear();
   lcd.createChar(0, circleTopLeft);
   lcd.createChar(1, circleTopRight);
   lcd.createChar(2, arrowRight);
   lcd.createChar(3, arrowLeft);
+
 }
 
-void loop()
-{
-  Receive_Data();
-  delay(25);
-  if (Receive_Com[0] == 'x')
-  {
-    ArdSerial.write("[M1:0,M2:0]");
-    Receive_Com[0] = '\0';
+void loop() {
+  if (Receive_Data()) {
+    //Serial.println(Receive_Com);
+    Com_Type(Receive_Com);
   }
-
-  // Update LCD only if there's new data in Receive_Com
   LCD_UpdateIfNewData();
-  //LCD_Display();
-
-  Receive_Com[0] = '\0'; 
 }
 
 void DCM1_Enc_Update()
@@ -344,10 +284,13 @@ void DCM2_Enc_Update()
   }
 }
 
+// Calculate target pulses for each motor based on distance given
 void Drive_Pulse_Target()
 {
   DCM1_Target = int(Drive_Val / Dist_Per_Pulse_M1);
   DCM2_Target = int(Drive_Val / Dist_Per_Pulse_M2);
+  //Serial.println(DCM1_Target);
+  //Serial.println(DCM2_Target);
   if (DCM1_Target > 0)
   {
     DCM1_Dir = 1;
@@ -366,48 +309,42 @@ void Drive_Pulse_Target()
   }
 }
 
+// Calculate target pulses for given rotation angle
 void Rot_Pulse_Target()
 {
   DCM1_Target = -int(((Rotate_Val * M_PI / 180) * Wheel_Dist / 2) / Dist_Per_Pulse_M1);
   DCM2_Target = int(((Rotate_Val * M_PI / 180) * Wheel_Dist / 2) / Dist_Per_Pulse_M2);
 }
 
-void Receive_Data()
-{
+// Receive python instructions
+bool Receive_Data() {
+  static byte index = 0;
   char data;
-  byte count = 0;
-  bool Receive_Inpr = false;
   bool New_Data = false;
-  char Com_Start = '['; // Command start character marker
-  char Com_End = ']';   // Command end character marker
-  while (Serial.available() > 0 && New_Data == false)
-  {
+
+  while (Serial.available() > 0 && !New_Data) {
     data = Serial.read();
-    if (Receive_Inpr == true)
-    {
-      if (data != Com_End)
-      {
-        Receive_Com[count] = data;
-        count++;
-      }
-      else
-      {
-        Receive_Com[count] = '\0';
-        Receive_Inpr = false;
-        count = 0;
-        New_Data = true;
-        //Serial.print("Receive_Com in Receive_Data: ");
-        //Serial.println(Receive_Com);
-      }
+
+    // Skip the starting bracket '['
+    if (data == '[' && index == 0) {
+      continue; // Ignore the starting bracket
     }
-    else if (data == Com_Start)
-    {
-      Receive_Inpr = true;
+
+    // Store data until ']' is encountered or buffer is full
+    if (data != '\n' && data != '\r') {
+      if (data != ']' && index < Num_Char - 1) {
+        Receive_Com[index++] = data;
+      } else if (data == ']') {
+        Receive_Com[index] = '\0'; // Null-terminate the string
+        New_Data = true; // Mark data as ready to process
+        index = 0; // Reset the index for the next command
+      }
     }
   }
-  Com_Type();
+  return New_Data;
 }
 
+// Send motor actuation instructions to Actuation Arduino
 void Send_Com()
 {
   // Serial.println("SENDING COM");
@@ -429,27 +366,32 @@ void Send_Com()
   }
 }
 
-void Com_Type()
+// Check if command is sensor, drive, or stop
+void Com_Type(char* Receive_Com)
 {
   if (Receive_Com[0] == 'u' || Receive_Com[0] == 'm')
   {
     Process_Sensor_Com();
+    Serial.println("[SENSOR COMMAND RECEIVED]");
   }
   else if (Receive_Com[0] == 'w' || Receive_Com[0] == 'r')
   {
     Process_Drive_Com();
-    Serial.println("[COMMAND RECEIVED]");
+    Serial.println("[DRIVE COMMAND RECEIVED]");
   }
   else if (Receive_Com[0] == 's')
   {
     Process_Servo_Com();
+    Serial.println("[SERVO COMMAND RECEIVED]");
   }
   else if (Receive_Com[0] == 'x')
   {
     ArdSerial.write("[M1:0,M2:0]");
+    Serial.println("[STOP COMMAND RECEIVED]");
   }
 }
 
+// Process drive commands 
 void Process_Drive_Com()
 {
   char Drive_Com[strlen(Receive_Com) - 3];
@@ -460,6 +402,7 @@ void Process_Drive_Com()
   if (Receive_Com[0] == 'w')
   {
     Drive_Val = atof(Drive_Com);
+    //Serial.println(Drive_Val);
     Drive_Pulse_Target();
     Send_Com();
   }
@@ -471,6 +414,7 @@ void Process_Drive_Com()
   }
 }
 
+// Process servo commands
 void Process_Servo_Com() {
   char Drive_Com[strlen(Receive_Com) - 1];  // Adjust to safely hold the target values
   for (int i = 0; i < strlen(Receive_Com) - 2; i++) {
@@ -483,58 +427,42 @@ void Process_Servo_Com() {
   ArdSerial.write(servo_string.c_str());
 }
 
+// Process sensor commands
 void Process_Sensor_Com()
 {
-  //Serial.print("Receive_Com in Process_Sensor_Com: ");
-  //Serial.println(Receive_Com);
-  String result = "[";
-  char *token = strtok(Receive_Com, ","); // Split Receive_com by delimiter (commas)
+  String result = "["; // Start result string
+  char *token = strtok(Receive_Com, ","); // Split Receive_Com by commas
 
   while (token != NULL)
   {
+    float output = 0; // Reset output for each token
     String tokenStr = String(token);
-    float output = 0;
+
     if (tokenStr == "u0") {
-      while(output < 1) {
-        output = tof0.readRangeSingleMillimeters()/25.4;
-      }
+      output = tof0.readRangeSingleMillimeters() / 25.4 - 1.1;
     } 
     else if (tokenStr == "u1") {
-      while(output < 1) {
-        output = tof1.readRangeSingleMillimeters()/25.4;
-      }
-    } 
-    else if (tokenStr == "u2") {
-      while(output < 1) {
-        output = tof2.readRangeSingleMillimeters()/25.4;
-      }
-    } 
-    else if (tokenStr == "u3") {
-      while(output < 1) {
-        output = tof3.readRangeSingleMillimeters()/25.4;
-      }
-    } 
-    else if (tokenStr == "u4") {
-      while(output < 1) {
-        output = tof4.readRangeSingleMillimeters()/25.4;
-      }
-    } 
-    else if (tokenStr == "u5") {
-      while(output < 1) {
-        output = tof5.readRangeSingleMillimeters()/25.4;
-      }
-    } 
-    else if (tokenStr == "u6") {
-      while(output < 1) {
-        output = tof6.readRangeSingleMillimeters()/25.4;
-      }
-    } 
-    else if (tokenStr == "m0")
-    {
-      output = M2_Check();
+      output = Ultrasonic_Check(U1_TRIG_PIN, U1_ECHO_PIN);
     }
-    else if (tokenStr == "m1")
-    {
+    else if (tokenStr == "u2") {
+      output = Ultrasonic_Check(U2_TRIG_PIN, U2_ECHO_PIN);
+    }
+    else if (tokenStr == "u3") {
+      output = Ultrasonic_Check(U3_TRIG_PIN, U3_ECHO_PIN);
+    }   
+    else if (tokenStr == "u4") {
+      output = Ultrasonic_Check(U4_TRIG_PIN, U4_ECHO_PIN);
+    }
+    else if (tokenStr == "u5") {
+      output = Ultrasonic_Check(U5_TRIG_PIN, U5_ECHO_PIN);
+    }  
+    else if (tokenStr == "u6") {
+      output = tof6.readRangeSingleMillimeters() / 25.4 - 1;
+    } 
+    else if (tokenStr == "m0") {
+      output = M2_Check();
+    } 
+    else if (tokenStr == "m1") {
       output = M1_Check();
     }
 
@@ -544,18 +472,43 @@ void Process_Sensor_Com()
     token = strtok(NULL, ","); // Move to the next token
   }
 
-  // Remove the last comma and close the bracket
-  result.remove(result.length() - 1);
+  // Remove trailing comma and close the result
+  if (result.endsWith(",")) {
+    result.remove(result.length() - 1);
+  }
   result += "]";
-  Receive_Com[0] = '\0';
+
+  // Output result
   Serial.println(result);
 }
 
+// Get ultrasonic sensor distance
+float Ultrasonic_Check(int TRIG_PIN, int ECHO_PIN) {
+  float distance = 0.0;
+
+  // Retry until a non-zero distance is obtained
+  while (distance < 1.0) {
+    // Trigger the ultrasonic sensor
+    digitalWrite(TRIG_PIN, LOW);
+    delayMicroseconds(2);
+    digitalWrite(TRIG_PIN, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(TRIG_PIN, LOW);
+
+    // Read echo and convert to distance
+    distance = pulseIn(ECHO_PIN, HIGH) / 2 * 0.0135;
+  }
+
+  return distance;
+}
+
+// M1 distance travelled
 float M1_Check()
 {
   return DCM1_Enc_Count * Dist_Per_Pulse_M1;
 }
 
+// M2 distance travelled
 float M2_Check()
 {
   return DCM2_Enc_Count * Dist_Per_Pulse_M2;
@@ -644,6 +597,7 @@ void LCD_Display() {
   }
  }
 
+// Updates LCD if new data is sent
 void LCD_UpdateIfNewData() {
   // Check if the current command is different from the last one
   if (strcmp(Receive_Com, lastReceiveCom) != 0) {
