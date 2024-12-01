@@ -1,9 +1,9 @@
 #include <Servo.h>
 #include <SoftwareSerial.h>
 
-// Array to store US/DRIVE command
-const byte Num_Char = 32; //Size of byte array
-char Receive_Com[Num_Char]; //Character array to store commands WITHOUT BRACKETS
+// Constants for buffer size
+const byte Num_Char = 64; // Increased size to handle multiple commands
+char Receive_Com[Num_Char]; // Buffer to store received commands
 
 // Sensor Arduino Serial Communication Pins
 int Ard_RX_Pin = 0;
@@ -25,146 +25,102 @@ int Servo_Control_Pin = 10;
 int DCM1_Speed = 0;
 int DCM2_Speed = 0;
 
-//Software Serial
+// Software Serial
 SoftwareSerial ArdSerial(Ard_RX_Pin, Ard_TX_Pin);
 
 void setup() {
-  // put your setup code here, to run once:
 
-// Define output and input pins
-
+  // I/O assignment
   pinMode(DCM1_ENB_Pin, OUTPUT);
   pinMode(DCM1_IN4_Pin, OUTPUT);
   pinMode(DCM1_IN3_Pin, OUTPUT);
   pinMode(DCM2_IN2_Pin, OUTPUT);
   pinMode(DCM2_IN1_Pin, OUTPUT);
   pinMode(DCM2_ENA_Pin, OUTPUT);
-  
+
+  // Initialize servo to 0 deg
   servo.attach(Servo_Control_Pin);
-  servo.write(90);
-  
-  Serial.begin(9600); //Start serial communication with sensor arduino
+  servo.write(0);
+
+  Serial.begin(9600); // Start serial communication with sensor Arduino
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  //Process_Com(Receive_Data());
-  if(Receive_Data())
-  {
+  if (Receive_Data()) {
+    //Serial.println(Receive_Com);
     Process_Com(Receive_Com);
   }
-  Receive_Com[0] = '\0';
-  delay(100);
 }
 
+// Receive data from Sensor Arduino
 bool Receive_Data() {
+  static byte index = 0;
   char data;
-  byte count = 0;
-  bool Receive_Inpr = false;
   bool New_Data = false;
-  char Com_Start = '['; // Command start character marker
-  char Com_End = ']';   // Command end character marker
-  while(Serial.available() > 0 && New_Data == false)
-  {
+
+  while (Serial.available() > 0 && !New_Data) {
     data = Serial.read();
-    //Serial.println(data);
-    if(Receive_Inpr == true)
-    {
-      if(data != Com_End)
-      {
-        Receive_Com[count] = data;
-        count++; 
-      }
-      else
-      {
-        Receive_Com[count] = '\0';
-        Receive_Inpr = false;
-        count = 0;
-        New_Data = true;
+
+    // Skip the starting bracket '['
+    if (data == '[' && index == 0) {
+      continue; // Ignore the starting bracket
+    }
+
+    // Store data until ']' is encountered or buffer is full
+    if (data != '\n' && data != '\r') {
+      if (data != ']' && index < Num_Char - 1) {
+        Receive_Com[index++] = data;
+      } else if (data == ']') {
+        Receive_Com[index] = '\0'; // Null-terminate the string
+        New_Data = true; // Mark data as ready to process
+        index = 0; // Reset the index for the next command
       }
     }
-    else if(data == Com_Start)
-    {
-      Receive_Inpr = true;
-    } 
-  } 
-  //Serial.println(Receive_Com);
+  }
   return New_Data;
 }
 
+// Process command based on python instruction
 void Process_Com(char* Com) {
-  // Pointer to keep track of the current position in the string
   char* segment = strtok(Com, ",");
-  //Serial.println(segment);
-  // Loop through each segment, which should look like "M1:50" or "M2:-50"
   while (segment != NULL) {
-    // Extract the motor number and its value using sscanf
+    // Process motor commands (e.g., "M1:100")
     int motorNumber, value;
     if (sscanf(segment, "M%d:%d", &motorNumber, &value) == 2) {
-      // Call the DCM function with the extracted motor number and value
-      //Serial.println(motorNumber);
-      //Serial.println(value);
       DCM_On(motorNumber, value);
     }
-    //for Servo commands
-    else if (segment[0] == 'S')
-    {
+    // Process servo commands (e.g., "S:45")
+    else if (segment[0] == 'S') {
       int angle;
-      if (sscanf(segment, "S:%d", &angle) == 1)
-      {
-        //Serial.println(angle);
+      if (sscanf(segment, "S:%d", &angle) == 1) {
         Servo_Pos(angle);
       }
     }
 
-    // Get the next segment
-    segment = strtok(NULL, ",");
-  } 
+    segment = strtok(NULL, ","); // Get next command
+  }
 }
 
+// Turn motors on
 void DCM_On(int DCM, int SPEED) {
-  //Serial.println("MOTOR ON");
-  if(DCM == 1)
-  {
-    if(SPEED >= 0)
-    {
-    digitalWrite(DCM1_IN3_Pin, LOW);
-    digitalWrite(DCM1_IN4_Pin, HIGH);
-    analogWrite(DCM1_ENB_Pin, SPEED);
-    }
-    if(SPEED < 0)
-    {
-      digitalWrite(DCM1_IN3_Pin, HIGH);
-      digitalWrite(DCM1_IN4_Pin, LOW);
-      analogWrite(DCM1_ENB_Pin, abs(SPEED));
-    }
-  }
-  //motor 2 on
-  if(DCM == 2)
-  {
-    if(SPEED >= 0)
-    {
-      digitalWrite(DCM2_IN1_Pin, LOW);
-      digitalWrite(DCM2_IN2_Pin, HIGH);
-      analogWrite(DCM2_ENA_Pin, SPEED);
-    }
-    if(SPEED < 0)
-    {
-      digitalWrite(DCM2_IN1_Pin, HIGH);
-      digitalWrite(DCM2_IN2_Pin, LOW);
-      analogWrite(DCM2_ENA_Pin, abs(SPEED));
-    }
+  if (DCM == 1) {
+    digitalWrite(DCM1_IN3_Pin, SPEED >= 0 ? LOW : HIGH);
+    digitalWrite(DCM1_IN4_Pin, SPEED >= 0 ? HIGH : LOW);
+    analogWrite(DCM1_ENB_Pin, abs(SPEED));
+  } else if (DCM == 2) {
+    digitalWrite(DCM2_IN1_Pin, SPEED >= 0 ? LOW : HIGH);
+    digitalWrite(DCM2_IN2_Pin, SPEED >= 0 ? HIGH : LOW);
+    analogWrite(DCM2_ENA_Pin, abs(SPEED));
   }
 }
 
+// Actuate servo to desired angle based on given command
 void Servo_Pos(int targetAngle) {
-  int currentAngle = servo.read();  // Read the current angle of the servo
-
-  // Determine the direction of movement and move the servo one degree at a time
+  int currentAngle = servo.read();
   if (targetAngle > currentAngle) {
     for (int pos = currentAngle; pos <= targetAngle; pos++) {
       servo.write(pos);
-      delay(15);  // Adjust delay as needed for smoother/faster motion
+      delay(15); // Adjust delay for smooth motion
     }
   } else {
     for (int pos = currentAngle; pos >= targetAngle; pos--) {
